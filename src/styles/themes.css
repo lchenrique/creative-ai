@@ -1,0 +1,33 @@
+:root{
+  --mini-site-radius: 10px;
+  --mini-site-radius-full: 999px;
+  --mini-site-radius-rounded: 16px;
+  --mini-site-radius-lg: 10px;
+  --mini-site-radius-md: 8px;
+  --mini-site-radius-sm: 5px;
+}
+
+
+#bio-theme[data-mode="light"] {
+  --mini-site-bg: #ffffff;
+  --mini-site-fg: #000000;
+  --mini-site-primary: #000000;
+  --mini-site-secondary: #e6e6e6;
+  --mini-site-link: #ffffff;
+  --mini-site-muted: rgba(0, 0, 0, 0.05);
+  --mini-site-border: rgba(0, 0, 0, 0.1);
+  --mini-site-radius: 10px;
+  --mini-site-shadow: none;
+}
+
+#bio-theme[data-mode="dark"] {
+  --mini-site-bg: #000000;
+  --mini-site-fg: #ffffff;
+  --mini-site-primary: #e6e6e6;
+  --mini-site-secondary: #000000;
+  --mini-site-link: #ffffff;
+  --mini-site-muted: rgba(255, 255, 255, 0.05);
+  --mini-site-border: rgba(255, 255, 255, 0.1);
+  --mini-site-radius: 10px;
+  --mini-site-shadow: none;
+}

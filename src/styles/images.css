@@ -1,0 +1,17 @@
+.bg-image-pixabay-11107 {
+    background-position: 0 0 !important;
+}
+
+/* glass */
+
+
+.bg-glass {
+    border-radius: 16px;
+    @apply bg-[var(--mini-site-shadow)]
+    bg-clip-padding
+    backdrop-filter
+    backdrop-blur-lg
+    bg-opacity-10
+    backdrop-saturate-100
+    backdrop-contrast-100
+}

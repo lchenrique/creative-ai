@@ -1,0 +1,763 @@
+/* Sunburst Dots Pattern */
+.pattern-sunburst-dots {
+    --s: 20px;
+    --c1: #ecbe13;
+    --c2: #309292;
+
+    --_g: radial-gradient(calc(var(--s)/2), var(--c1) 97%, #0000);
+    background:
+        var(--_g), var(--_g) calc(2*var(--s)) calc(2*var(--s)),
+        repeating-conic-gradient(from 45deg, #0000 0 25%, var(--c2) 0 50%) calc(-.707*var(--s)) calc(-.707*var(--s)),
+        repeating-linear-gradient(135deg, var(--c1) calc(var(--s)/-2) calc(var(--s)/2), var(--c2) 0 calc(2.328*var(--s)));
+    background-size: calc(4*var(--s)) calc(4*var(--s));
+}
+
+/* Windmill Pattern */
+.pattern-windmill {
+    --s: 60px;
+    --c1: #5e9fa3;
+    --c2: #dcd1b4;
+
+    --cp: #0000, var(--c1) 2deg 133deg, #0000 135deg;
+    --g1: conic-gradient(from -112.5deg at 25% 25%, var(--cp));
+    --g2: conic-gradient(from -22.5deg at 75% 25%, var(--cp));
+    --g3: conic-gradient(from 67.5deg at 75% 75%, var(--cp));
+    --g4: conic-gradient(from 157.5deg at 25% 75%, var(--cp));
+    background:
+        var(--g1), var(--g1), var(--g2), var(--g2),
+        var(--g3), var(--g3), var(--g4), var(--g4) var(--c2);
+    background-position: 0 0, calc(var(--s)/2) calc(var(--s)/2);
+    background-size: var(--s) var(--s);
+}
+
+/* Elegant Curves Pattern */
+.pattern-elegant-curves {
+    --s: 40px;
+    --c1: #b38184;
+    --c2: #413e4a;
+
+    --cp: var(--c1) 25%;
+    background:
+        conic-gradient(from -45deg at 75% 12.5%, var(--cp), #0000 0),
+        conic-gradient(from 135deg at 25% 87.5%, var(--cp), #0000 0) 0 calc(var(--s)/2),
+        conic-gradient(from 180deg at 50% 75%, #0000 62.5%, var(--cp)),
+        conic-gradient(at 50% 25%, #0000 62.5%, var(--cp)) 0 calc(var(--s)/2) var(--c2);
+    background-size: var(--s) calc(2*var(--s));
+}
+
+/* Striped Waves Pattern */
+.pattern-striped-waves {
+    --s: 40px;
+    --c1: #cc2a41;
+    --c2: #351330;
+
+    --_g: #0000 24%,
+        var(--c2) 26% 34%, var(--c1) 36% 44%,
+        var(--c2) 46% 54%, var(--c1) 56% 64%,
+        var(--c2) 66% 74%, #0000 76%;
+    background:
+        radial-gradient(100% 100% at 100% 0, var(--_g)),
+        radial-gradient(100% 100% at 0 100%, var(--_g)),
+        radial-gradient(var(--c2) 14%, var(--c1) 16%) calc(var(--s)/2) calc(var(--s)/2);
+    background-size: var(--s) var(--s);
+}
+
+/* Woven Texture Pattern */
+.pattern-woven-texture {
+    --s: 40px;
+    --c1: #f8edd1;
+    --c2: #d88a8a;
+    --c3: #9d9d93;
+
+    --cp: #0000 48%, var(--c1) 0 52%, #0000 0;
+    background:
+        linear-gradient(-45deg, var(--cp)), linear-gradient(45deg, var(--cp)),
+        repeating-conic-gradient(from 45deg, var(--c2) 0 25%, var(--c3) 0 50%);
+    background-size: var(--s) var(--s);
+}
+
+/* Rainbow Ripples Pattern */
+.pattern-rainbow-ripples {
+    --s: 50px;
+    --c1: #ab3e5b;
+    --c2: #ffbe40;
+    --c3: #accec0;
+    --c4: #61a6ab;
+
+    --_g:
+        #0000 25%, #0008 47%, var(--c1) 53% 147%, var(--c2) 153% 247%,
+        var(--c1) 253% 347%, var(--c2) 353% 447%, var(--c1) 453% 547%, #0008 553%, #0000 575%;
+    --_s: calc(25%/3) calc(25%/4) at 50%;
+    background:
+        radial-gradient(var(--_s) 100%, var(--_g)),
+        radial-gradient(var(--_s) 100%, var(--_g)) calc(var(--s)/2) calc(3*var(--s)/4),
+        radial-gradient(var(--_s) 0, var(--_g)) calc(var(--s)/2) 0,
+        radial-gradient(var(--_s) 0, var(--_g)) 0 calc(3*var(--s)/4),
+        repeating-linear-gradient(90deg, var(--c3) calc(25%/-6) calc(25%/6), var(--c4) 0 calc(25%/2));
+    background-size: var(--s) calc(3*var(--s)/2);
+}
+
+/* Crossed Lines Pattern */
+.pattern-crossed-lines {
+    --s: 30px;
+    --c1: #ecd078;
+    --c2: #542437;
+
+    --l1: #0000 48%, var(--c1) 0 52%, #0000 0;
+    --l2: #0000 1.3%, var(--c2) 0 32%, #0000 0;
+    background:
+        linear-gradient(-45deg, var(--l2)),
+        linear-gradient(45deg, var(--l1)),
+        linear-gradient(45deg, var(--l2)) calc(var(--s)/2) calc(var(--s)/2),
+        linear-gradient(-45deg, var(--l1)) var(--c2);
+    background-size: calc(2*var(--s)) var(--s), var(--s) var(--s);
+}
+
+/* Vintage Circles Pattern */
+.pattern-vintage-circles {
+    --s: 35px;
+    --c1: #6b5344;
+    --c2: #f8ecc9;
+
+    --_l: #0000 46%, var(--c1) 47% 53%, #0000 54%;
+    background:
+        radial-gradient(100% 100% at 100% 100%, var(--_l)) var(--s) var(--s),
+        radial-gradient(100% 100% at 0 0, var(--_l)) var(--s) var(--s),
+        radial-gradient(100% 100%, #0000 22%, var(--c1) 23% 29%, #0000 30% 34%, var(--c1) 35% 41%, #0000 42%),
+        var(--c2);
+    background-size: calc(var(--s)*2) calc(var(--s)*2);
+}
+
+/* Waves Flow Pattern */
+.pattern-waves-flow {
+    --s: 40px;
+    --c1: #d95b43;
+    --c2: #a7dbd8;
+
+    background:
+        conic-gradient(from -30deg at 50% calc(100% - var(--s)/2), var(--c1) 60deg, #0000 0) calc(var(--s)/2) calc(var(--s)/6),
+        conic-gradient(from 150deg at 50% calc(var(--s)/2), var(--c2) 60deg, #0000 0) 0 calc(var(--s)/-6),
+        conic-gradient(from 150deg at 50% 0, var(--c1) 60deg, var(--c2) 0);
+    background-size: var(--s) calc(var(--s)*cos(30deg));
+}
+
+/* Colorful Mosaic Pattern */
+.pattern-colorful-mosaic {
+    --s: 35px;
+    --c1: #f77825;
+    --c2: #60b99a;
+    --c3: #f1efa5;
+    --c4: #554236;
+
+    background:
+        conic-gradient(from 150deg, var(--c1) 60deg, #0000 0 180deg,
+            var(--c2) 0 240deg, #0000 0) var(--s) 0,
+        conic-gradient(from -30deg, var(--c1) 60deg, var(--c3) 0 120deg, var(--c4) 0 180deg,
+            var(--c2) 0 240deg, var(--c3) 0 300deg, var(--c4) 0);
+    background-size: calc(2*var(--s)) var(--s);
+}
+
+/* Geometric Waves Pattern */
+.pattern-geometric-waves {
+    --s: 35px;
+    --c1: #f6d86b;
+    --c2: #f10c49;
+
+    background:
+        conic-gradient(var(--c2) atan(2), var(--c1) 0 calc(180deg - atan(2)),
+            var(--c2) 0 180deg, var(--c1) 0 calc(180deg + atan(2)),
+            var(--c2) 0 calc(360deg - atan(2)), var(--c1) 0);
+    background-size: calc(2*var(--s)) var(--s);
+}
+
+/* Sunflower Pattern */
+.pattern-sunflower {
+    --s: 50px;
+    --c1: #f8ca00;
+    --c2: #bd1550;
+
+    --_g: var(--c1) 90deg, var(--c2) 0 135deg, #0000 0;
+    background:
+        conic-gradient(from -45deg at calc(100%/3) calc(100%/3), var(--c1) 90deg, #0000 0),
+        conic-gradient(from -135deg at calc(100%/3) calc(2*100%/3), var(--_g)),
+        conic-gradient(from 135deg at calc(2*100%/3) calc(2*100%/3), var(--_g)),
+        conic-gradient(from 45deg at calc(2*100%/3) calc(100%/3), var(--_g), var(--c1) 0 225deg, var(--c2) 0);
+    background-size: var(--s) var(--s);
+}
+
+/* Autumn Leaves Pattern */
+.pattern-autumn-leaves {
+    --s: 30px;
+    --c1: #ffdc56;
+    --c2: #fe6601;
+    --c3: #803201;
+
+    --_s: calc(2*var(--s)) calc(2*var(--s));
+    --_g1: var(--_s) conic-gradient(at calc(500%/6) 50%, var(--c3) 25%, #0000 0);
+    --_g2: var(--_s) conic-gradient(at calc(200%/3) 50%, var(--c2) 25%, #0000 0);
+    background:
+        var(--s) var(--s)/var(--_g1), 0 0/var(--_g1),
+        var(--s) var(--s)/var(--_g2), 0 0/var(--_g2),
+        repeating-conic-gradient(var(--c1) 0 25%, #0000 0 50%) 0 0/var(--_s),
+        linear-gradient(var(--c1) calc(100%/3), var(--c2) 0 calc(200%/3), var(--c3) 0) 0 0/var(--s) var(--s);
+}
+
+.pattern-rhombus-octagons {
+    --s: 40px;
+    /* control the size*/
+    --c1: #4e395d;
+    --c2: #8ebe94;
+
+    --_g: var(--c1) 15%, var(--c2) 0 28%, #0000 0 72%, var(--c2) 0 85%, var(--c1) 0;
+    background:
+        conic-gradient(from 90deg at 2px 2px, #0000 25%, var(--c1) 0) -1px -1px,
+        linear-gradient(-45deg, var(--_g)), linear-gradient(45deg, var(--_g)),
+        conic-gradient(from 90deg at 40% 40%, var(--c1) 25%, var(--c2) 0) calc(var(--s)/-5) calc(var(--s)/-5);
+    background-size: var(--s) var(--s);
+}
+
+/* Zen Garden Pattern */
+.pattern-zen-garden {
+    --s: 40px;
+    --c1: #80bca3;
+    --c2: #655643;
+
+    background:
+        radial-gradient(var(--c2) 15%, #0000 17% 20%, var(--c2) 22% 25%, #0000 27% 30%, var(--c2) 32% 35%, #0000 37% 40%, var(--c2) 42% 45%, #0000 47% 50%, var(--c2) 52% 55%, var(--c1) 57%) calc(var(--s)/2) 0/var(--s) var(--s),
+        repeating-conic-gradient(var(--c2) 0 25%, var(--c1) 0 50%) 0 0/calc(2*var(--s)) calc(2*var(--s));
+}
+
+/* Bamboo Forest Pattern */
+.pattern-bamboo-forest {
+    --s: 5px;
+    --c1: #e4844a;
+    --c2: #0d6759;
+
+    --g: radial-gradient(30% 50% at 30% 100%, #0000 66%, var(--c1) 67% 98%, #0000);
+    background:
+        var(--g), var(--g) calc(5*var(--s)) calc(3*var(--s)),
+        repeating-linear-gradient(90deg, var(--c1) 0 10%, var(--c2) 0 50%);
+    background-size: calc(10*var(--s)) calc(6*var(--s));
+}
+
+/* Sunset Gradient Pattern */
+.pattern-sunset-gradient {
+    --s: 40px;
+    --c1: #f8b195;
+    --c2: #355c7d;
+
+    --_g:
+        var(--c2) 6% 14%, var(--c1) 16% 24%, var(--c2) 26% 34%, var(--c1) 36% 44%,
+        var(--c2) 46% 54%, var(--c1) 56% 64%, var(--c2) 66% 74%, var(--c1) 76% 84%, var(--c2) 86% 94%;
+    background:
+        radial-gradient(100% 100% at 100% 0, var(--c1) 4%, var(--_g), #0008 96%, #0000),
+        radial-gradient(100% 100% at 0 100%, #0000, #0008 4%, var(--_g), var(--c1) 96%) var(--c1);
+    background-size: var(--s) var(--s);
+}
+
+/* Leaf Shadows Pattern */
+.pattern-leaf-shadows {
+    --s: 35px;
+    --c1: #e9e0d1;
+    --c2: #59a80f;
+
+    --cp: #0000 75%, var(--c1) 0;
+    --g: /calc(2*var(--s)) var(--s) conic-gradient(at 62.5% 25%, var(--cp));
+    background:
+        calc(var(--s)/4) calc(var(--s)/ 4) var(--g),
+        calc(5*var(--s)/4) calc(var(--s)/-4) var(--g),
+        linear-gradient(90deg, var(--cp)) 0/var(--s) var(--s) var(--c2);
+}
+
+/* Desert Sand Pattern */
+.pattern-desert-sand {
+    --s: 25px;
+    --c1: #dfba69;
+    --c2: #5a2e2e;
+
+    --p: 35%, #0000 calc(35% + 1px);
+    background:
+        radial-gradient(at 0 100%, var(--c1) var(--p)) var(--s) 0,
+        radial-gradient(at 0 100%, var(--c2) var(--p)) 0 var(--s),
+        repeating-conic-gradient(from 45deg, var(--c2) 0 25%, var(--c1) 0 50%);
+    background-size: calc(2*var(--s)) calc(2*var(--s));
+}
+
+
+
+/* Diamond Grid Pattern */
+.pattern-diamond-grid {
+    --s: 25px;
+    --c1: #292522;
+    --c2: #efd9b4;
+
+    --cp: #0000 75%, var(--c1) 0;
+    --g1: conic-gradient(at 75% 25%, var(--cp));
+    --g2: conic-gradient(at 25% 75%, var(--cp));
+    background:
+        var(--g1), var(--g1) var(--s) var(--s),
+        var(--g2), var(--g2) var(--s) var(--s) var(--c2);
+    background-size: calc(2*var(--s)) calc(2*var(--s));
+}
+
+/* Spring Meadow Pattern */
+.pattern-spring-meadow {
+    --s: 25px;
+    --c1: #f2f26f;
+    --c2: #a0c55f;
+
+    --cp: #0000 79%, var(--c1) 81% 99%, var(--c2) 101% 150%, #0000 0;
+    background:
+        radial-gradient(var(--s) at 100% 100%, var(--cp)),
+        radial-gradient(var(--s) at 100% 0, var(--cp)) calc(3*var(--s)/2) 0,
+        radial-gradient(var(--s) at 0 100%, var(--cp)) calc(var(--s)/2) 0,
+        radial-gradient(var(--s) at 0 0, var(--cp)) calc(2*var(--s)) 0,
+        repeating-linear-gradient(90deg,
+            var(--c1) 0 calc(20%/3), #0000 0 calc(70%/3),
+            var(--c1) 0 30%, #0000 0 50%) calc(var(--s)/-5) 0 var(--c2);
+    background-size: calc(3*var(--s)) calc(5*var(--s)/2);
+}
+
+/* Padrão Sunset Stripes - Listras diagonais em tons de laranja e cinza escuro */
+.pattern-sunset-stripes {
+    --s: 40px;
+    /* control the size*/
+    --c1: #d3643b;
+    --c2: #333333;
+
+    --cp: var(--c2) 20% 30%;
+    background:
+        linear-gradient(135deg, #0000 20%, var(--cp), #0000 0),
+        repeating-linear-gradient(45deg, var(--cp), var(--c1) 0 70%);
+    background-size: var(--s) var(--s);
+}
+
+/* Padrão Mint Petals - Padrão floral suave em tons de verde menta e creme */
+.pattern-mint-petals {
+    --s: 40px;
+    /* control the size*/
+    --c1: #90c0b2;
+    --c2: #f9fbef;
+
+    --g: var(--c1) 0 25%, var(--c2) 0 50%, #0000 0;
+    background:
+        conic-gradient(from 135deg at 25% 75%, var(--g)) calc(var(--s)/4) calc(var(--s)/-4),
+        conic-gradient(from -45deg at 75% 25%, var(--g)) calc(var(--s)/-4) calc(var(--s)/4),
+        repeating-conic-gradient(var(--g));
+    background-size: var(--s) var(--s);
+}
+
+/* Padrão Forest Maze - Labirinto geométrico em verde e azul marinho */
+.pattern-forest-maze {
+    --s: 60px;
+    /* control the size*/
+    --c1: #1c2130;
+    --c2: #b3e099;
+
+    --_c: 5%, #0000 75%, var(--c1) 0;
+    --_g: /var(--s) var(--s) conic-gradient(at var(--_c));
+    --_l: /var(--s) var(--s) conic-gradient(at 50% var(--_c));
+    background:
+        0 calc(7*var(--s)/10) var(--_l),
+        calc(var(--s)/2) calc(var(--s)/5) var(--_l),
+        calc(var(--s)/5) 0 var(--_g),
+        calc(7*var(--s)/10) calc(var(--s)/2) var(--_g),
+        conic-gradient(at 90% 90%, var(--c1) 75%, var(--c2) 0) 0 0/calc(var(--s)/2) calc(var(--s)/2);
+}
+
+/* Padrão Ocean Waves - Ondas geométricas em azul marinho e bege */
+.pattern-ocean-waves {
+    --s: 30px;
+    /* control the size*/
+    --c1: #f8e4c1;
+    --c2: #2b4e72;
+
+    --cp: #0000 75%, var(--c1) 0;
+    --g1: conic-gradient(at 78% 3%, var(--cp));
+    --g2: conic-gradient(at 3% 78%, var(--cp));
+    background:
+        var(--g1),
+        var(--g1) var(--s) var(--s),
+        var(--g1) calc(2*var(--s)) calc(2*var(--s)),
+        var(--g1) calc(3*var(--s)) calc(3*var(--s)),
+        var(--g2) 0 calc(3*var(--s)),
+        var(--g2) var(--s) 0,
+        var(--g2) calc(2*var(--s)) var(--s),
+        var(--g2) calc(3*var(--s)) calc(2*var(--s)) var(--c2);
+    background-size: calc(4*var(--s)) calc(4*var(--s));
+}
+
+/* Padrão Ruby Diamonds - Diamantes entrelaçados em vermelho e roxo escuro */
+.pattern-ruby-diamonds {
+    --s: 62px;
+    /* control the size*/
+    --c1: #cf4647;
+    --c2: #524656;
+
+    background:
+        conic-gradient(from 45deg at 75% 75%, var(--c1) 25%, var(--c2) 0 50%, #0000 0) 0 0/var(--s) var(--s),
+        conic-gradient(from 225deg at 25% 25%, var(--c2) 25%, var(--c1) 0 50%, #0000 0) 0 0/var(--s) var(--s),
+        repeating-conic-gradient(var(--c2) 0 25%, var(--c1) 0 50%) 0 0/calc(2*var(--s)) calc(2*var(--s));
+}
+
+/* Padrão Golden Weave - Padrão entrelaçado em dourado e vinho */
+.pattern-golden-weave {
+    --s: 40px;
+    /* control the size*/
+    --c1: #e8bf56;
+    --c2: #91204d;
+
+    --_l: #0000 43.75%, var(--c1) 0 56.25%, #0000 0;
+    --_s: calc(var(--s)/4) calc(var(--s)/-4)/ calc(var(--s)*2) calc(var(--s)*2);
+    background:
+        linear-gradient(-45deg, var(--_l)) var(--_s),
+        linear-gradient(45deg, var(--_l)) var(--_s),
+        conic-gradient(var(--c2) 75%, var(--c1) 0) 0 0/var(--s) var(--s);
+}
+
+
+.pattern-meander {
+    --s: 40px;
+    /* control the size*/
+    --c1: #72e21f;
+    --c2: #044012;
+
+    --_c: var(--c1) 25%, #0000 0;
+    --_g1: conic-gradient(at 62.5% 12.5%, var(--_c));
+    --_g2: conic-gradient(at 87.5% 62.5%, var(--_c));
+    --_g3: conic-gradient(at 25% 12.5%, var(--_c));
+    background:
+        var(--_g1) calc(var(--s)/-8) calc(var(--s)/2), var(--_g1) calc(-3*var(--s)/8) calc(var(--s)/4),
+        var(--_g2) calc(3*var(--s)/8) calc(var(--s)/4), var(--_g2) calc(var(--s)/-8) 0,
+        var(--_g3) 0 calc(var(--s)/-4), var(--_g3) calc(var(--s)/-4) 0,
+        conic-gradient(at 87.5% 87.5%, var(--_c)) calc(var(--s)/8) 0 var(--c2);
+    background-size: var(--s) var(--s);
+}
+
+.pattern-retangular-with-3d-effect {
+    --s: 40px;
+    /* control the size*/
+    --c1: #f6edb3;
+    --c2: #acc4a3;
+    --c3: #55897c;
+
+    background:
+        repeating-conic-gradient(#0000 0 25%, var(--c1) 0 50%) 0 0/calc(2*var(--s)) var(--s),
+        linear-gradient(-45deg, var(--c2) 33.3%, var(--c3) 0) 0 0/var(--s) calc(var(--s)/2)
+}
+
+
+/* CSS Pattern Variables */
+:root {
+    /* Pattern Colors */
+    --pattern-primary: var(--c1);
+    --pattern-secondary: var(--c2);
+    --pattern-accent: var(--c3, #000);
+    --pattern-highlight: var(--c4, #fff);
+}
+
+/* Pattern color variables for new pattern classes */
+.pattern-checks-sm {
+    --c1: #4a90e2;
+    --c2: #f5a623;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-checks-md {
+    --c1: #417505;
+    --c2: #b8e986;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-checks-lg {
+    --c1: #d0021b;
+    --c2: #f8e71c;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-checks-xl {
+    --c1: #9013fe;
+    --c2: #50e3c2;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-grid-sm {
+    --c1: #7ed6df;
+    --c2: #e17055;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-grid-md {
+    --c1: #00b894;
+    --c2: #fdcb6e;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-grid-lg {
+    --c1: #636e72;
+    --c2: #fab1a0;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-grid-xl {
+    --c1: #fd79a8;
+    --c2: #00cec9;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+
+
+.pattern-dots-md {
+    --c1: #6ab04c;
+    --c2: #eb4d4b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-dots-lg {
+    --c1: #4834d4;
+    --c2: #f9ca24;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-dots-xl {
+    --c1: #e056fd;
+    --c2: #686de0;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+
+
+.pattern-cross-dots-md {
+    --c1: #fdcb6e;
+    --c2: #0984e3;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-cross-dots-lg {
+    --c1: #e17055;
+    --c2: #00b894;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-cross-dots-xl {
+    --c1: #6c5ce7;
+    --c2: #fd79a8;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-diagonal-lines-sm {
+    --c1: #00bcd4;
+    --c2: #ffeb3b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-diagonal-lines-md {
+    --c1: #ff5722;
+    --c2: #607d8b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-diagonal-lines-lg {
+    --c1: #8bc34a;
+    --c2: #e91e63;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-diagonal-lines-xl {
+    --c1: #3f51b5;
+    --c2: #cddc39;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-lines-sm {
+    --c1: #f1c40f;
+    --c2: #2ecc71;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-lines-md {
+    --c1: #e67e22;
+    --c2: #1abc9c;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-lines-lg {
+    --c1: #9b59b6;
+    --c2: #34495e;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-lines-xl {
+    --c1: #e74c3c;
+    --c2: #3498db;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-lines-sm {
+    --c1: #16a085;
+    --c2: #f39c12;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-lines-md {
+    --c1: #2980b9;
+    --c2: #c0392b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-lines-lg {
+    --c1: #8e44ad;
+    --c2: #27ae60;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-lines-xl {
+    --c1: #2c3e50;
+    --c2: #f1c40f;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-diagonal-stripes-sm {
+    --c1: #00cec9;
+    --c2: #ff7675;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+    background-size: 500% 500% !important;
+}
+
+.pattern-diagonal-stripes-md {
+    --c1: #fdcb6e;
+    --c2: #0984e3;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+    background-size: 200% 500% !important;
+}
+
+
+
+    
+.pattern-diagonal-stripes-lg {
+    --c1: #e17055;
+    --c2: #00b894;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+    background-size: 200% 500% !important;
+}
+
+.pattern-diagonal-stripes-xl {
+    --c1: #6c5ce7;
+    --c2: #fd79a8;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+    background-size: 500% 500% !important;
+}
+
+.pattern-horizontal-stripes-sm {
+    --c1: #fab1a0;
+    --c2: #636e72;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-stripes-md {
+    --c1: #00b894;
+    --c2: #fdcb6e;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-stripes-lg {
+    --c1: #7ed6df;
+    --c2: #e17055;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-horizontal-stripes-xl {
+    --c1: #fd79a8;
+    --c2: #00cec9;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-stripes-sm {
+    --c1: #f6e58d;
+    --c2: #30336b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-stripes-md {
+    --c1: #6ab04c;
+    --c2: #eb4d4b;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-stripes-lg {
+    --c1: #4834d4;
+    --c2: #f9ca24;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-vertical-stripes-xl {
+    --c1: #e056fd;
+    --c2: #686de0;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-triangles-sm {
+    --c1: #00b894;
+    --c2: #d35400;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-triangles-md {
+    --c1: #fdcb6e;
+    --c2: #0984e3;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-triangles-lg {
+    --c1: #e17055;
+    --c2: #00b894;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-triangles-xl {
+    --c1: #6c5ce7;
+    --c2: #fd79a8;
+    @apply text-[var(--c1)] bg-[var(--c2)];
+}
+
+.pattern-zigzag-sm {
+    --c: #00bcd4;
+    --c1: var(currentColor, --c);
+    --c2: #ffeb3b;
+    background: linear-gradient(135deg, var(--c1) 25%, transparent 25%) -50px 0, linear-gradient(225deg, var(--c1) 25%, transparent 25%) -50px 0, linear-gradient(315deg, var(--c1) 25%, transparent 25%), linear-gradient(45deg, var(--c1) 25%, var(--c2) 25%);
+    color: var(--c1);
+    background-size: calc(2 * 10px) calc(2 * 10px)
+}
+
+.pattern-zigzag-md {
+    --c1: #ff5722;
+    --c2: #607d8b;
+    background: linear-gradient(135deg, var(--c1) 25%, transparent 25%) -25px 0, linear-gradient(225deg, var(--c1) 25%, transparent 25%) -25px 0, linear-gradient(315deg, var(--c1) 25%, transparent 25%), linear-gradient(45deg, var(--c1) 25%, var(--c2) 25%);
+    background-size: calc(2 * 25px) calc(2 * 25px);
+
+}
+
+.pattern-zigzag-lg {
+    --c1: #8bc34a;
+    --c2: #e91e63;
+    background: linear-gradient(135deg, var(--c1) 25%, transparent 25%) -50px 0, linear-gradient(225deg, var(--c1) 25%, transparent 25%) -50px 0, linear-gradient(315deg, var(--c1) 25%, transparent 25%), linear-gradient(45deg, var(--c1) 25%, var(--c2) 25%);
+    background-size: calc(2 * 50px) calc(2 * 50px);
+
+}
+
+.pattern-zigzag-xl {
+    --c1: #3f51b5;
+    --c2: #cddc39;
+    background: linear-gradient(135deg, var(--c1) 25%, transparent 25%) -100px 0, linear-gradient(225deg, var(--c1) 25%, transparent 25%) -100px 0, linear-gradient(315deg, var(--c1) 25%, transparent 25%), linear-gradient(45deg, var(--c1) 25%, var(--c2) 25%);
+    background-size: calc(2 * 100px) calc(2 * 100px);
+}
+
+
+
+@keyframes barberpole {
+    100% {
+      background-position: 100% 100%;
+    }
+  }
+
+
