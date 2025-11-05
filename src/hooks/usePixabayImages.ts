@@ -49,13 +49,10 @@ export const usePixabayImages = ({
             }
 
             const data = await response.json()
-            
-            if (pageNum === 1) {
-                setImages(data.hits || [])
-            } else {
-                setImages(prev => [...prev, ...(data.hits || [])])
-            }
-            
+
+            // Sempre substitui as imagens com os resultados da página atual
+            setImages(data.hits || [])
+
             setHasMore((data.hits || []).length === perPage)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro desconhecido')

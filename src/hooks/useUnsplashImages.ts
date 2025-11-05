@@ -101,13 +101,10 @@
                 }
 
                 const data = await response.json()
-                
-                if (pageNum === 1) {
-                    setImages(data.results)
-                } else {
-                    setImages(prev => [...prev, ...data.results])
-                }
-                
+
+                // Sempre substitui as imagens com os resultados da página atual
+                setImages(data.results)
+
                 setHasMore(data.results.length === perPage)
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Erro desconhecido')

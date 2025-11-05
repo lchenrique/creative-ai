@@ -185,9 +185,9 @@ export default function GradientControl({
 
     return (
         <TooltipProvider>
-            <Card className="w-full border-none shadow-none no-animation">
+            <Card className="w-full max-w-[400px] border-none shadow-none no-animation">
 
-                <CardContent className="p-3 pt-0 space-y-3">
+                <CardContent className="p-0 space-y-3">
                     {/* Tabs principais */}
                     <Tabs
                         value={tabSelected}

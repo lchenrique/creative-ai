@@ -108,7 +108,7 @@ export function Background() {
         // Usar a cor sólida como base para gerar cores complementares
         const baseColor = patternCSSColor
 
-        patternBgStyle = Object.entries(PATTERN_DEFAULTS[background.pattern]).map(([key, value]) => {
+        patternBgStyle = Object.entries(PATTERN_DEFAULTS[background.pattern]).map(([key, _value]) => {
             const cMap: Record<string, number> = {
                 '--c1': 0.8,
                 '--c2': 0.5,
@@ -128,7 +128,15 @@ export function Background() {
     if (background.colorType === "image") {
         return (
             <>
-                <img className="absolute h-full  w-full object-cover"
+                <img
+                    className="absolute object-cover"
+                    style={{
+                        width: '600px',
+                        height: '600px',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)'
+                    }}
                     src={background.image || ''}
                 />
             </>
@@ -139,7 +147,14 @@ export function Background() {
         return (
             <>
                 <video
-                    className="absolute top-0 z-0 h-full w-full object-cover"
+                    className="absolute z-0 object-cover"
+                    style={{
+                        width: '600px',
+                        height: '600px',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)'
+                    }}
                     src={background.video}
                     autoPlay
                     loop
@@ -163,9 +178,16 @@ export function Background() {
                 `}
             </style>
             <div
-                className={cn("absolute top-0 h-full w-full", currentBackgroundClass, "pattern-bg")}
-                style={!isPattern ? { background: currentBackgroundCSS, transition: "background 0.3s ease-in-out" } : {
-                    animation: backgroundAnimation && backgroundAnimation && currentBackgroundClass ? patternAnimations[currentBackgroundClass] : "none"
+                className={cn("absolute", currentBackgroundClass, "pattern-bg")}
+                style={{
+                    width: '600px',
+                    height: '600px',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    ...(!isPattern ? { background: currentBackgroundCSS, transition: "background 0.3s ease-in-out" } : {
+                        animation: backgroundAnimation && backgroundAnimation && currentBackgroundClass ? patternAnimations[currentBackgroundClass] : "none"
+                    })
                 }} />
         </div>
     )

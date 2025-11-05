@@ -1,0 +1,80 @@
+import { createClient } from "@supabase/supabase-js"
+import "dotenv/config"
+import * as fs from "fs"
+import * as path from "path"
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || ""
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("❌ Configure as variáveis de ambiente")
+    process.exit(1)
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// CONFIGURE AQUI: Ajuste o caminho para onde está a pasta open_stickers
+const LOCAL_FOLDER = process.argv[2] || "D:/projetos/open_stickers"
+const BUCKET_NAME = "cliparts"
+const BUCKET_PREFIX = "open_stickers"
+
+async function uploadFolder(localPath: string, remotePath: string = BUCKET_PREFIX) {
+    const items = fs.readdirSync(localPath)
+
+    for (const item of items) {
+        const localItemPath = path.join(localPath, item)
+        const remoteItemPath = `${remotePath}/${item}`
+        const stats = fs.statSync(localItemPath)
+
+        if (stats.isDirectory()) {
+            console.log(`📁 Processando pasta: ${item}`)
+            await uploadFolder(localItemPath, remoteItemPath)
+        } else if (item.endsWith(".svg") || item.endsWith(".png") || item.endsWith(".jpg") || item.endsWith(".jpeg")) {
+            const fileBuffer = fs.readFileSync(localItemPath)
+
+            // Determinar content type
+            let contentType = "image/svg+xml"
+            if (item.endsWith(".png")) contentType = "image/png"
+            else if (item.endsWith(".jpg") || item.endsWith(".jpeg")) contentType = "image/jpeg"
+
+            const { error } = await supabase.storage
+                .from(BUCKET_NAME)
+                .upload(remoteItemPath, fileBuffer, {
+                    contentType,
+                    upsert: true,
+                })
+
+            if (error) {
+                console.error(`   ❌ Erro ao fazer upload de ${item}:`, error.message)
+            } else {
+                console.log(`   ✅ Upload: ${item}`)
+            }
+        }
+    }
+}
+
+async function main() {
+    console.log("🚀 Iniciando upload da pasta open_stickers...\n")
+    console.log(`📁 Pasta local: ${LOCAL_FOLDER}\n`)
+
+    if (!fs.existsSync(LOCAL_FOLDER)) {
+        console.error(`❌ Pasta não encontrada: ${LOCAL_FOLDER}`)
+        console.error("\n💡 Como usar:")
+        console.error("   1. Baixe/copie a pasta open_stickers para algum lugar")
+        console.error("   2. Execute: pnpm upload-open-stickers <caminho-da-pasta>")
+        console.error("   Exemplo: pnpm upload-open-stickers D:/Downloads/open_stickers")
+        console.error("\n   OU edite o script e ajuste a variável LOCAL_FOLDER")
+        process.exit(1)
+    }
+
+    try {
+        await uploadFolder(LOCAL_FOLDER)
+        console.log("\n🎉 Upload completo!")
+        console.log("\n🔍 Próximo passo: execute 'pnpm index-cliparts-v2' para indexar no banco")
+    } catch (error) {
+        console.error("❌ Erro durante upload:", error)
+        process.exit(1)
+    }
+}
+
+main().catch(console.error)

@@ -41,7 +41,7 @@ export default function GradientColorPicker({
           />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0 overflow-hidden" side="right" align="center">
+      <PopoverContent className="w-auto min-w-[300px] p-3 overflow-hidden" side="right" align="center">
         <GradientControl
           enableImage={enableImage}
           colorConfig={colorConfig}

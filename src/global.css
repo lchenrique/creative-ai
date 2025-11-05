@@ -121,7 +121,7 @@
 }
 
 @theme inline {
-  --color-*: initial;
+  /* --color-*: initial; */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

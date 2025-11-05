@@ -4,8 +4,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Sparkles } from "lucide-react"
+import { Send, Sparkles, Loader2 } from "lucide-react"
 import type { ArtConfig } from "@/app/page"
+import { useDesignCommands } from "@/hooks/useDesignCommands"
 
 type Message = {
   role: "user" | "assistant"
@@ -21,11 +22,12 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Olá! Sou sua assistente de criação. Descreva o criativo que você quer criar e eu vou ajudar você!",
+      content: "Olá! Sou sua assistente de criação com IA Gemini.\n\nDescreva o design que você quer criar e eu vou gerar usando as ferramentas do canvas!\n\nExemplo: 'crie um cartaz de promoção com fundo vermelho e texto grande'",
     },
   ])
   const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+
+  const { executeDesign, loading: aiLoading, error: aiError } = useDesignCommands()
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -33,17 +35,43 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
     const userMessage = input.trim()
     setInput("")
     setMessages((prev) => [...prev, { role: "user", content: userMessage }])
-    setIsLoading(true)
 
-    // Simulate AI response with suggestions
-    setTimeout(() => {
+    // Usa Gemini para gerar e executar design
+    try {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "🎨 Gerando seu design com IA... Aguarde!",
+        },
+      ])
+
+      await executeDesign(userMessage)
+
+      setMessages((prev) => [
+        ...prev.slice(0, -1), // Remove mensagem de loading
+        {
+          role: "assistant",
+          content: `✅ Design criado com sucesso!\n\nOs elementos foram adicionados ao canvas. Você pode editá-los livremente usando as ferramentas do lado direito!`,
+        },
+      ])
+    } catch (error) {
+      console.error("Erro ao gerar design:", error)
+      setMessages((prev) => [
+        ...prev.slice(0, -1), // Remove mensagem de loading
+        {
+          role: "assistant",
+          content: `❌ Erro ao gerar design: ${aiError || "Erro desconhecido"}.\n\nTente novamente com uma descrição diferente.`,
+        },
+      ])
+
+      // Fallback para sugestões antigas
       const suggestions = generateSuggestions(userMessage, artConfig)
-      setMessages((prev) => [...prev, { role: "assistant", content: suggestions.message }])
+      setMessages((prev) => [...prev, { role: "assistant", content: `\n💡 Sugestão: ${suggestions.message}` }])
       if (suggestions.config) {
         setArtConfig({ ...artConfig, ...suggestions.config })
       }
-      setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -54,9 +82,11 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
           <div className="size-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
             <Sparkles className="size-4 text-white" />
           </div>
-          <div>
-            <h3 className="font-semibold text-sm">Assistente IA</h3>
-            <p className="text-xs text-muted-foreground">Online</p>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">Assistente IA Gemini</h3>
+            <p className="text-xs text-muted-foreground">
+              {aiLoading ? "Gerando..." : "Online"}
+            </p>
           </div>
         </div>
       </div>
@@ -67,7 +97,7 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
                   message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                 }`}
               >
@@ -75,19 +105,12 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
               </div>
             </div>
           ))}
-          {isLoading && (
+          {aiLoading && (
             <div className="flex justify-start">
               <div className="bg-muted rounded-lg px-3 py-2 text-sm">
-                <div className="flex gap-1">
-                  <div className="size-2 rounded-full bg-muted-foreground animate-bounce" />
-                  <div
-                    className="size-2 rounded-full bg-muted-foreground animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  />
-                  <div
-                    className="size-2 rounded-full bg-muted-foreground animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Gerando com Gemini AI...</span>
                 </div>
               </div>
             </div>
@@ -99,21 +122,26 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
       <div className="p-4 border-t border-border">
         <div className="flex gap-2">
           <Input
-            placeholder="Descreva seu criativo..."
+            placeholder="Descreva seu design..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            disabled={isLoading}
+            onKeyDown={(e) => e.key === "Enter" && !aiLoading && handleSend()}
+            disabled={aiLoading}
+            className="text-sm"
           />
-          <Button size="icon" onClick={handleSend} disabled={isLoading}>
-            <Send className="size-4" />
+          <Button size="icon" onClick={handleSend} disabled={aiLoading || !input.trim()}>
+            {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Descreva cores, textos, formas. A IA criará usando as ferramentas do canvas.
+        </p>
       </div>
     </div>
   )
 }
 
+// Fallback function (mantida como backup)
 function generateSuggestions(
   userInput: string,
   currentConfig: ArtConfig,
@@ -163,42 +191,8 @@ function generateSuggestions(
     }
   }
 
-  // Minimalista
-  if (lower.includes("minimalista") || lower.includes("minimal")) {
-    return {
-      message: "Apliquei um estilo minimalista com cores suaves e tipografia clean.",
-      config: {
-        theme: "minimal",
-        gradient: {
-          enabled: false,
-          from: "#f3f4f6",
-          to: "#e5e7eb",
-          direction: "to-b",
-        },
-        backgroundColor: "#ffffff",
-        textColor: "#1f2937",
-      },
-    }
-  }
-
-  // Moderno
-  if (lower.includes("moderno") || lower.includes("modern")) {
-    return {
-      message: "Criei um design moderno com gradientes vibrantes e tipografia bold!",
-      config: {
-        theme: "modern",
-        gradient: {
-          enabled: true,
-          from: "#3b82f6",
-          to: "#8b5cf6",
-          direction: "to-br",
-        },
-      },
-    }
-  }
-
   return {
     message:
-      "Entendi! Você pode usar os menus flutuantes à direita para personalizar cores, fontes e outros elementos. O que mais gostaria de ajustar?",
+      "Entendi! Você pode usar os menus flutuantes à direita para personalizar cores, fontes e outros elementos.",
   }
 }

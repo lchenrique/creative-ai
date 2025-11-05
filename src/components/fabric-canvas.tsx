@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
-import { Canvas, Rect, Circle, Triangle, Line, Polygon, FabricImage, Point, util, Textbox, Gradient } from "fabric";
+import { Canvas, Rect, Circle, Triangle, Line, Polygon, FabricImage, Point, util, Textbox, Gradient, Pattern, Group, ActiveSelection } from "fabric";
+import * as fabric from "fabric";
 import FontFaceObserver from 'fontfaceobserver';
 import WebFont from 'webfontloader';
 import { Background } from "./art-background";
@@ -7,6 +8,7 @@ import { useCreativeStore } from "@/stores/creative-store";
 import { INITIAL_COLOR_CONFIG } from "@/stores/creative-store";
 import type { ColorConfig } from "./gradient-control";
 import { fontOptions } from "@/data/font-options";
+import { CanvasContextMenu } from "./canvas-context-menu";
 
 // Função para criar gradiente na Fabric.js
 const createFabricGradient = (
@@ -66,7 +68,8 @@ export function FabricCanvas() {
   const setSelectedText = useCreativeStore((state) => state.setSelectedText);
   const selectedText = useCreativeStore((state) => state.selectedText);
 
-  const rotateSnaps = [0, 45, 90, 135, 180, 225, 270, 315, 360];
+  const snapAngleDegrees = 5; // Graus de snap para rotação
+  const rotateSnaps = Array.from({ length: 73 }, (_, i) => i * 5); // 0, 5, 10, 15, ..., 360
   const centerLineColor = '#3988ad';
   const centerLineWidth = 1;
 
@@ -82,18 +85,19 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
     const colors = ['blue', 'red', 'green', 'purple', 'orange', 'pink'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     const rect = new Rect({
       width: 150,
       height: 100,
-      top: Math.random() * 200 + 100,
-      left: Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 300 + 100,
       fill: randomColor,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
       lockRotation: false,
     } as any);
@@ -112,19 +116,21 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
 
     const textbox = new Textbox('Texto aqui', {
-      left: Math.random() * 300 + 100,
-      top: Math.random() * 200 + 100,
-      width: 200,
+      left: offset.left + Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
+      width: 120,
       fontSize: 24,
       fill: '#000000',
       fontFamily: 'Arial',
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
-    } as any);
+      textAlign: "center"
+    });
 
     (textbox as any).lockedDegree = null;
 
@@ -138,17 +144,18 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
     const colors = ['blue', 'red', 'green', 'purple', 'orange', 'pink'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     const circle = new Circle({
       radius: 50,
-      top: Math.random() * 200 + 100,
-      left: Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 300 + 100,
       fill: randomColor,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
     } as any);
 
@@ -164,18 +171,19 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
     const colors = ['blue', 'red', 'green', 'purple', 'orange', 'pink'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     const triangle = new Triangle({
       width: 100,
       height: 100,
-      top: Math.random() * 200 + 100,
-      left: Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 300 + 100,
       fill: randomColor,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
     } as any);
 
@@ -191,15 +199,16 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
 
     const line = new Line([50, 50, 200, 50], {
-      left: Math.random() * 200 + 100,
-      top: Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 200 + 100,
+      top: offset.top + Math.random() * 200 + 100,
       stroke: '#000000',
       strokeWidth: 3,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
     } as any);
 
@@ -215,6 +224,7 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
     const colors = ['blue', 'red', 'green', 'purple', 'orange', 'pink'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
@@ -234,12 +244,12 @@ export function FabricCanvas() {
     }
 
     const star = new Polygon(points, {
-      left: Math.random() * 300 + 100,
-      top: Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
       fill: randomColor,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
     } as any);
 
@@ -255,6 +265,7 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
     const colors = ['red', 'pink', 'purple', 'orange'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
@@ -271,12 +282,12 @@ export function FabricCanvas() {
     ];
 
     const heart = new Polygon(points, {
-      left: Math.random() * 300 + 100,
-      top: Math.random() * 200 + 100,
+      left: offset.left + Math.random() * 300 + 100,
+      top: offset.top + Math.random() * 200 + 100,
       fill: randomColor,
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
     } as any);
 
@@ -305,6 +316,7 @@ export function FabricCanvas() {
           if (!fabricCanvasRef.current) return;
 
           const canvas = fabricCanvasRef.current;
+          const offset = getWorkAreaOffset();
 
           // Scale image to fit canvas
           const maxWidth = 300;
@@ -312,13 +324,13 @@ export function FabricCanvas() {
           const scale = Math.min(maxWidth / (img.width || 1), maxHeight / (img.height || 1), 1);
 
           img.set({
-            left: Math.random() * 200 + 100,
-            top: Math.random() * 150 + 100,
+            left: offset.left + Math.random() * 200 + 100,
+            top: offset.top + Math.random() * 150 + 100,
             scaleX: scale,
             scaleY: scale,
             centeredRotation: true,
             centeredScaling: false,
-            snapAngle: 45,
+            snapAngle: snapAngleDegrees,
             snapThreshold: 10,
           } as any);
 
@@ -341,20 +353,221 @@ export function FabricCanvas() {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
+
+    // Verificar se é SVG
+    const isSVG = imageUrl.toLowerCase().endsWith('.svg');
+
+    console.log('🖼️ addImageFromURL chamado:', { imageUrl, isSVG });
+
+    if (isSVG) {
+      // Carregar SVG como objetos editáveis
+      console.log('🎨 Carregando SVG...');
+
+      // Primeiro baixar o SVG como texto
+      fetch(imageUrl)
+        .then(response => response.text())
+        .then(svgText => {
+          console.log('✅ SVG texto carregado');
+
+          // Usar loadSVGFromString - retorna Promise com array de objetos
+          fabric.loadSVGFromString(svgText).then(({ objects, options }: any) => {
+            if (!fabricCanvasRef.current) return;
+
+            console.log('✅ Objetos Fabric criados:', objects.length, 'objetos');
+
+            // Se só tem um objeto, usar direto
+            let svgGroup;
+            if (objects.length === 1) {
+              svgGroup = objects[0];
+            } else {
+              // Criar grupo com múltiplos objetos
+              svgGroup = new Group(objects);
+            }
+
+            if (svgGroup) {
+              console.log('✅ Grupo SVG criado:', svgGroup);
+
+              // Scale to fit canvas
+              const maxWidth = 300;
+              const maxHeight = 300;
+              const scale = Math.min(
+                maxWidth / (svgGroup.width || 200),
+                maxHeight / (svgGroup.height || 200),
+                1
+              );
+
+              svgGroup.set({
+                left: offset.left + Math.random() * 200 + 100,
+                top: offset.top + Math.random() * 150 + 100,
+                scaleX: scale,
+                scaleY: scale,
+                centeredRotation: true,
+                centeredScaling: false,
+                snapAngle: snapAngleDegrees,
+                snapThreshold: 10,
+              });
+
+              (svgGroup as any).lockedDegree = null;
+              (svgGroup as any)._isSVGGroup = true; // Marcar como grupo SVG
+
+              canvas.add(svgGroup);
+              canvas.setActiveObject(svgGroup);
+              canvas.renderAll();
+
+              console.log('✅ SVG adicionado ao canvas');
+            } else {
+              console.error('❌ Falha ao criar grupo SVG');
+            }
+          });
+        })
+        .catch(error => {
+          console.error('❌ Erro ao carregar SVG:', error, imageUrl);
+        });
+    } else {
+      // Carregar imagem normal (PNG, JPG)
+      console.log('🖼️ Carregando imagem raster...');
+
+      FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
+        if (!fabricCanvasRef.current) return;
+
+        console.log('✅ Imagem carregada:', img);
+
+        // Scale image to fit canvas
+        const maxWidth = 300;
+        const maxHeight = 300;
+        const scale = Math.min(maxWidth / (img.width || 200), maxHeight / (img.height || 200), 1);
+
+        img.set({
+          left: offset.left + Math.random() * 200 + 100,
+          top: offset.top + Math.random() * 150 + 100,
+          scaleX: scale,
+          scaleY: scale,
+          centeredRotation: true,
+          centeredScaling: false,
+          snapAngle: snapAngleDegrees,
+          snapThreshold: 10,
+        } as any);
+
+        (img as any).lockedDegree = null;
+
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.renderAll();
+
+        console.log('✅ Imagem adicionada ao canvas');
+      }).catch((error) => {
+        console.error('❌ Error loading image from URL:', error, imageUrl);
+      });
+    }
+  }, []);
+
+  // Parametrized functions for AI commands
+  const addTextboxWithParams = useCallback((text: string, options: any = {}) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const canvasWidth = canvas.width || 600;
+    const canvasHeight = canvas.height || 600;
+
+    const textbox = new Textbox(text, {
+      left: options.left ?? canvasWidth / 2 - 100,
+      top: options.top ?? canvasHeight / 4,
+      width: options.width ?? 200,
+      fontSize: options.fontSize ?? 24,
+      fill: options.color ?? '#000000',
+      fontFamily: options.fontFamily ?? 'Arial',
+      fontWeight: options.fontWeight ?? 'normal',
+      centeredRotation: true,
+      centeredScaling: false,
+      snapAngle: 45,
+      snapThreshold: 10,
+    } as any);
+
+    (textbox as any).lockedDegree = null;
+
+    canvas.add(textbox);
+    canvas.setActiveObject(textbox);
+    canvas.renderAll();
+    console.log('📝 Textbox adicionado:', text, options);
+  }, []);
+
+  const addRectangleWithParams = useCallback((options: any = {}) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const canvasWidth = canvas.width || 600;
+    const canvasHeight = canvas.height || 600;
+
+    const rect = new Rect({
+      width: options.width ?? 150,
+      height: options.height ?? 100,
+      top: options.top ?? canvasHeight / 2,
+      left: options.left ?? canvasWidth / 2 - 75,
+      fill: options.color ?? 'blue',
+      centeredRotation: true,
+      centeredScaling: false,
+      snapAngle: 45,
+      snapThreshold: 10,
+    } as any);
+
+    (rect as any).myType = "box";
+    (rect as any).minScaleLimit = 0.4;
+    (rect as any).lockedDegree = null;
+
+    canvas.add(rect);
+    canvas.setActiveObject(rect);
+    canvas.renderAll();
+    console.log('🟦 Retângulo adicionado:', options);
+  }, []);
+
+  const addCircleWithParams = useCallback((options: any = {}) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const canvasWidth = canvas.width || 600;
+    const canvasHeight = canvas.height || 600;
+
+    const circle = new Circle({
+      radius: options.radius ?? 50,
+      top: options.top ?? canvasHeight / 2,
+      left: options.left ?? canvasWidth / 2 - 50,
+      fill: options.color ?? 'red',
+      centeredRotation: true,
+      centeredScaling: false,
+      snapAngle: 45,
+      snapThreshold: 10,
+    } as any);
+
+    (circle as any).lockedDegree = null;
+
+    canvas.add(circle);
+    canvas.setActiveObject(circle);
+    canvas.renderAll();
+    console.log('🔵 Círculo adicionado:', options);
+  }, []);
+
+  const addImageFromURLWithParams = useCallback((imageUrl: string, options: any = {}) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const canvasWidth = canvas.width || 600;
+    const canvasHeight = canvas.height || 600;
 
     FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
       if (!fabricCanvasRef.current) return;
 
-      // Scale image to fit canvas
-      const maxWidth = 300;
-      const maxHeight = 300;
-      const scale = Math.min(maxWidth / (img.width || 1), maxHeight / (img.height || 1), 1);
+      // Define scale baseado em width/height fornecidos ou padrão
+      const targetWidth = options.width ?? 200;
+      const targetHeight = options.height ?? 200;
+      const scaleX = targetWidth / (img.width || 1);
+      const scaleY = targetHeight / (img.height || 1);
 
       img.set({
-        left: Math.random() * 200 + 100,
-        top: Math.random() * 150 + 100,
-        scaleX: scale,
-        scaleY: scale,
+        left: options.left ?? canvasWidth / 2 - targetWidth / 2,
+        top: options.top ?? canvasHeight / 2 - targetHeight / 2,
+        scaleX: scaleX,
+        scaleY: scaleY,
         centeredRotation: true,
         centeredScaling: false,
         snapAngle: 45,
@@ -366,9 +579,968 @@ export function FabricCanvas() {
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.renderAll();
+      console.log('🖼️ Imagem adicionada com params:', options);
     }).catch((error) => {
       console.error('Error loading image from URL:', error);
     });
+  }, []);
+
+  // Aplicar imagem com máscara de recorte (clipPath)
+  const applyImageAsClipMask = useCallback(async (imageUrl: string) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado para aplicar máscara');
+      return;
+    }
+
+    if (activeObject.type === 'line' || activeObject.type === 'textbox' || activeObject.type === 'i-text') {
+      console.warn('⚠️ Tipo de objeto não suportado para máscara');
+      return;
+    }
+
+    try {
+      // Carregar a imagem
+      const fabricImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
+      if (!fabricCanvasRef.current) return;
+
+      // Pegar dimensões e posição do shape original
+      const shapeLeft = activeObject.left || 0;
+      const shapeTop = activeObject.top || 0;
+      const shapeWidth = activeObject.width || 100;
+      const shapeHeight = activeObject.height || 100;
+      const shapeScaleX = activeObject.scaleX || 1;
+      const shapeScaleY = activeObject.scaleY || 1;
+      const shapeAngle = activeObject.angle || 0;
+
+      // Calcular dimensões finais do shape
+      const finalWidth = shapeWidth * shapeScaleX;
+      const finalHeight = shapeHeight * shapeScaleY;
+
+      // Configurar a imagem para preencher o shape
+      const imgWidth = fabricImg.width || 1;
+      const imgHeight = fabricImg.height || 1;
+
+      // Calcular escala para cobrir todo o shape
+      const scaleX = finalWidth / imgWidth;
+      const scaleY = finalHeight / imgHeight;
+      const scale = Math.max(scaleX, scaleY); // Usar o maior para cobrir completamente
+
+      // Criar uma cópia do shape para usar como clipPath
+      const clonedShape = await activeObject.clone();
+
+      // Resetar transformações do clone para usar como máscara
+      clonedShape.set({
+        left: -finalWidth / 2,
+        top: -finalHeight / 2,
+        scaleX: 1,
+        scaleY: 1,
+        angle: 0,
+        absolutePositioned: true,
+      });
+
+      // Configurar a imagem
+      fabricImg.set({
+        left: shapeLeft,
+        top: shapeTop,
+        scaleX: scale,
+        scaleY: scale,
+        angle: shapeAngle,
+        clipPath: clonedShape, // Aplicar o shape como máscara
+        centeredRotation: true,
+        centeredScaling: false,
+        snapAngle: 45,
+        snapThreshold: 10,
+      });
+
+      // Guardar referência ao shape original (se quiser permitir edição da máscara)
+      (fabricImg as any).maskShape = clonedShape;
+      (fabricImg as any).originalShapeType = activeObject.type;
+
+      // Remover shape original e adicionar imagem mascarada
+      canvas.remove(activeObject);
+      canvas.add(fabricImg);
+      canvas.setActiveObject(fabricImg);
+      canvas.renderAll();
+
+      console.log('🎭 Máscara de recorte aplicada:', activeObject.type);
+    } catch (error) {
+      console.error('❌ Erro ao aplicar máscara de recorte:', error);
+    }
+  }, []);
+
+  // Aplicar padrão de imagem em objeto (mantido para compatibilidade)
+  const applyPatternToObject = useCallback((imageUrl: string, repeatMode: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat' = 'no-repeat') => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado para aplicar padrão');
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const pattern = new Pattern({
+        source: img,
+        repeat: repeatMode,
+      });
+      activeObject.set('fill', pattern);
+      canvas.renderAll();
+      console.log('🎨 Padrão aplicado ao objeto:', repeatMode);
+    };
+    img.onerror = () => {
+      console.error('❌ Erro ao carregar imagem do padrão');
+    };
+    img.src = imageUrl;
+  }, []);
+
+  // Remover padrão e restaurar cor sólida
+  const removePatternFromObject = useCallback((color: string = '#000000') => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado');
+      return;
+    }
+
+    activeObject.set('fill', color);
+    canvas.renderAll();
+    console.log('🎨 Padrão removido, cor restaurada:', color);
+  }, []);
+
+  // ===== SIMPLIFIED CLIP SYSTEM =====
+
+  // Aplicar clipPath a um objeto com shell de controle opcional
+  const applyClipPathToObject = useCallback(async (clipShapeType: 'circle' | 'rect' | 'path' = 'circle', showShell: boolean = true) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado');
+      return;
+    }
+
+    try {
+      let clipPath: any;
+      let shell: any = null;
+
+      // Criar clipPath baseado no tipo
+      if (clipShapeType === 'circle') {
+        const radius = 100;
+        clipPath = new Circle({
+          radius: radius,
+          originX: 'center',
+          originY: 'center',
+          absolutePositioned: true,
+        });
+
+        if (showShell) {
+          shell = new Circle({
+            radius: radius,
+            left: activeObject.left || 0,
+            top: activeObject.top || 0,
+            fill: 'transparent',
+            stroke: '#3b82f6',
+            strokeWidth: 2,
+            strokeDashArray: [5, 5],
+            originX: 'center',
+            originY: 'center',
+            hasControls: true,
+            hasBorders: true,
+          });
+        }
+      } else if (clipShapeType === 'rect') {
+        const width = 200;
+        const height = 150;
+        clipPath = new Rect({
+          width: width,
+          height: height,
+          originX: 'center',
+          originY: 'center',
+          absolutePositioned: true,
+        });
+
+        if (showShell) {
+          shell = new Rect({
+            width: width,
+            height: height,
+            left: activeObject.left || 0,
+            top: activeObject.top || 0,
+            fill: 'transparent',
+            stroke: '#3b82f6',
+            strokeWidth: 2,
+            strokeDashArray: [5, 5],
+            originX: 'center',
+            originY: 'center',
+            hasControls: true,
+            hasBorders: true,
+          });
+        }
+      }
+
+      // Aplicar clipPath ao objeto
+      activeObject.set({
+        clipPath: clipPath,
+      });
+
+      // Guardar referências
+      (activeObject as any)._clipPath = clipPath;
+      (activeObject as any)._clipShell = shell;
+
+      if (shell) {
+        // Adicionar shell ao canvas
+        canvas.add(shell);
+
+        // Marcar como shell de controle
+        (shell as any)._isClipShell = true;
+        (shell as any)._targetObject = activeObject;
+
+        // Eventos do shell para controlar a máscara
+        shell.on('moving', () => {
+          if (!clipPath) return;
+          clipPath.setPositionByOrigin(shell.getCenterPoint(), 'center', 'center');
+          activeObject.set('dirty', true);
+          canvas.renderAll();
+        });
+
+        shell.on('rotating', () => {
+          if (!clipPath) return;
+          clipPath.set({ angle: shell.angle });
+          activeObject.set('dirty', true);
+          canvas.renderAll();
+        });
+
+        shell.on('scaling', () => {
+          if (!clipPath) return;
+          clipPath.set({
+            scaleX: shell.scaleX,
+            scaleY: shell.scaleY,
+          });
+          activeObject.set('dirty', true);
+          canvas.renderAll();
+        });
+
+        // Posicionar clipPath inicialmente
+        clipPath.setPositionByOrigin(shell.getCenterPoint(), 'center', 'center');
+      }
+
+      canvas.renderAll();
+      console.log('🎭 ClipPath aplicado com shell de controle');
+    } catch (error) {
+      console.error('❌ Erro ao aplicar clipPath:', error);
+    }
+  }, []);
+
+  // Remover clipPath de um objeto
+  const removeClipPath = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado');
+      return;
+    }
+
+    // Remover shell se existir
+    const shell = (activeObject as any)._clipShell;
+    if (shell) {
+      canvas.remove(shell);
+    }
+
+    // Remover clipPath
+    activeObject.set('clipPath', null);
+    delete (activeObject as any)._clipPath;
+    delete (activeObject as any)._clipShell;
+
+    canvas.renderAll();
+    console.log('🔓 ClipPath removido');
+  }, []);
+
+  // ===== IMAGE FRAME SYSTEM =====
+
+  // Converter forma em moldura para imagens
+  const convertToImageFrame = useCallback(async (imageUrl?: string) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject || activeObject.type === 'textbox' || activeObject.type === 'i-text' || activeObject.type === 'image') {
+      console.warn('⚠️ Selecione uma forma (retângulo, círculo, etc.) para converter em moldura');
+      return;
+    }
+
+    try {
+      // Criar clipPath baseado no tipo da forma
+      let clipPath: any;
+      const objWidth = (activeObject.width || 100) * (activeObject.scaleX || 1);
+      const objHeight = (activeObject.height || 100) * (activeObject.scaleY || 1);
+      const objCenter = activeObject.getCenterPoint();
+
+      if (activeObject.type === 'circle') {
+        const radius = (activeObject as any).radius * (activeObject.scaleX || 1);
+        clipPath = new Circle({
+          radius: radius,
+          originX: 'center',
+          originY: 'center',
+          absolutePositioned: true,
+        });
+      } else if (activeObject.type === 'rect') {
+        clipPath = new Rect({
+          width: objWidth,
+          height: objHeight,
+          originX: 'center',
+          originY: 'center',
+          absolutePositioned: true,
+        });
+      } else if (activeObject.type === 'triangle' || activeObject.type === 'polygon') {
+        // Para formas complexas, clonar
+        const cloned = await activeObject.clone();
+        clipPath = cloned;
+        clipPath.set({
+          originX: 'center',
+          originY: 'center',
+          absolutePositioned: true,
+        });
+      } else {
+        console.warn('⚠️ Tipo de forma não suportado:', activeObject.type);
+        return;
+      }
+
+      clipPath.setPositionByOrigin(objCenter, 'center', 'center');
+      clipPath.set('angle', activeObject.angle);
+
+      // Função auxiliar para criar frame com imagem
+      const createFrameWithImage = async (imgUrl: string) => {
+        const imgElement = await FabricImage.fromURL(imgUrl, {
+          crossOrigin: 'anonymous',
+        });
+
+        // Escalar imagem para cobrir a moldura
+        const imgWidth = imgElement.width || 100;
+        const imgHeight = imgElement.height || 100;
+        const scale = Math.max(objWidth / imgWidth, objHeight / imgHeight);
+
+        imgElement.set({
+          scaleX: scale,
+          scaleY: scale,
+          clipPath: clipPath,
+          selectable: true,
+          evented: true,
+        } as any);
+
+        // Marcar como imagem de moldura
+        (imgElement as any)._isFrameImage = true;
+        (imgElement as any)._frameObject = activeObject;
+
+        imgElement.setPositionByOrigin(objCenter, 'center', 'center');
+
+        // Marcar a moldura
+        (activeObject as any)._isFrame = true;
+        (activeObject as any)._frameImage = imgElement;
+        (activeObject as any)._frameClipPath = clipPath;
+
+        // Sincronizar moldura → clipPath → imagem
+        activeObject.on('moving', () => {
+          const newCenter = activeObject.getCenterPoint();
+          clipPath.setPositionByOrigin(newCenter, 'center', 'center');
+          canvas.renderAll();
+        });
+
+        activeObject.on('rotating', () => {
+          clipPath.set('angle', activeObject.angle);
+          canvas.renderAll();
+        });
+
+        activeObject.on('scaling', () => {
+          if (activeObject.type === 'circle') {
+            const newRadius = (activeObject as any).radius * (activeObject.scaleX || 1);
+            clipPath.set('radius', newRadius);
+          } else if (activeObject.type === 'rect') {
+            const newWidth = (activeObject.width || 100) * (activeObject.scaleX || 1);
+            const newHeight = (activeObject.height || 100) * (activeObject.scaleY || 1);
+            clipPath.set({ width: newWidth, height: newHeight });
+          }
+          canvas.renderAll();
+        });
+
+        // Adicionar imagem ao canvas
+        canvas.add(imgElement);
+        canvas.setActiveObject(imgElement);
+        canvas.renderAll();
+
+        console.log('✅ Moldura criada com imagem arrastável');
+      };
+
+      // Se não tiver URL, pedir upload
+      if (!imageUrl) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e: any) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const imgUrl = event.target?.result as string;
+              await createFrameWithImage(imgUrl);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      } else {
+        await createFrameWithImage(imageUrl);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar moldura:', error);
+    }
+  }, []);
+
+  // Remover imagem da moldura
+  const removeFrameImage = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) return;
+
+    // Se for a imagem, remover
+    if ((activeObject as any)._isFrameImage) {
+      const frame = (activeObject as any)._frameObject;
+      if (frame) {
+        delete (frame as any)._frameImage;
+        delete (frame as any)._frameClipPath;
+      }
+      canvas.remove(activeObject);
+      canvas.renderAll();
+      console.log('✅ Imagem removida da moldura');
+      return;
+    }
+
+    // Se for a moldura, remover a imagem associada
+    if ((activeObject as any)._isFrame && (activeObject as any)._frameImage) {
+      canvas.remove((activeObject as any)._frameImage);
+      delete (activeObject as any)._frameImage;
+      delete (activeObject as any)._frameClipPath;
+      delete (activeObject as any)._isFrame;
+      canvas.renderAll();
+      console.log('✅ Imagem removida da moldura');
+    }
+  }, []);
+
+  // ===== CLIP GROUP FUNCTIONS (DEPRECATED - USE IMAGE FRAME INSTEAD) =====
+
+  // Converter objeto selecionado em Clip Group
+  const convertToClipGroup = useCallback(async () => {
+    if (!fabricCanvasRef.current) return null;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject) {
+      console.warn('⚠️ Nenhum objeto selecionado para converter em Clip Group');
+      return null;
+    }
+
+    if (activeObject.type === 'group' && (activeObject as any)._isClipGroup) {
+      console.warn('⚠️ Objeto já é um Clip Group');
+      return activeObject;
+    }
+
+    try {
+      // Clonar o objeto para usar como clipPath
+      const clipShape = await activeObject.clone();
+
+      // Resetar posição do clip para relativa ao grupo
+      clipShape.set({
+        left: 0,
+        top: 0,
+        angle: 0,
+        scaleX: 1,
+        scaleY: 1,
+      });
+
+      // Criar um grupo vazio com o clipPath
+      const clipGroup = new Group([], {
+        left: activeObject.left,
+        top: activeObject.top,
+        angle: activeObject.angle || 0,
+        clipPath: clipShape,
+      });
+
+      // Marcar como Clip Group
+      (clipGroup as any)._isClipGroup = true;
+      (clipGroup as any)._clipShape = clipShape;
+      (clipGroup as any)._originalType = activeObject.type;
+
+      // Remover objeto original e adicionar grupo
+      canvas.remove(activeObject);
+      canvas.add(clipGroup);
+      canvas.setActiveObject(clipGroup);
+      canvas.renderAll();
+
+      console.log('✨ Clip Group criado');
+      return clipGroup;
+    } catch (error) {
+      console.error('❌ Erro ao converter para Clip Group:', error);
+      return null;
+    }
+  }, []);
+
+  // Entrar no modo de edição do Clip Group
+  const enterClipGroupEditMode = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject || activeObject.type !== 'group') {
+      console.warn('⚠️ Selecione um Clip Group para editar');
+      return;
+    }
+
+    const clipGroup = activeObject as any;
+
+    if (!clipGroup._isClipGroup) {
+      console.warn('⚠️ Objeto não é um Clip Group');
+      return;
+    }
+
+    // Marcar como modo de edição
+    clipGroup._isClipGroupEditMode = true;
+
+    // Tornar o grupo selecionável mas mostrar os objetos internos
+    clipGroup.set({
+      selectable: true,
+      evented: true,
+    });
+
+    // Permitir seleção de objetos internos
+    clipGroup.set('subTargetCheck', true);
+
+    canvas.renderAll();
+    console.log('📝 Modo de edição ativado para Clip Group');
+  }, []);
+
+  // Sair do modo de edição do Clip Group
+  const exitClipGroupEditMode = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (activeObject && activeObject.type === 'group') {
+      const clipGroup = activeObject as any;
+      clipGroup._isClipGroupEditMode = false;
+      clipGroup.set('subTargetCheck', false);
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      console.log('✅ Modo de edição desativado');
+    }
+  }, []);
+
+  // Adicionar objeto ao Clip Group selecionado
+  const addToClipGroup = useCallback((object: any) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const clipGroup = canvas.getActiveObject();
+
+    if (!clipGroup || clipGroup.type !== 'group') {
+      console.warn('⚠️ Selecione um Clip Group primeiro');
+      return;
+    }
+
+    const group = clipGroup as any;
+
+    if (!group._isClipGroup) {
+      console.warn('⚠️ Objeto não é um Clip Group');
+      return;
+    }
+
+    // Adicionar objeto ao grupo
+    group.addWithUpdate(object);
+    canvas.renderAll();
+    console.log('➕ Objeto adicionado ao Clip Group');
+  }, []);
+
+  // Remover objeto do Clip Group
+  const removeFromClipGroup = useCallback((object: any) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const clipGroup = canvas.getActiveObject();
+
+    if (!clipGroup || clipGroup.type !== 'group') {
+      console.warn('⚠️ Selecione um Clip Group primeiro');
+      return;
+    }
+
+    const group = clipGroup as any;
+
+    if (!group._isClipGroup) {
+      console.warn('⚠️ Objeto não é um Clip Group');
+      return;
+    }
+
+    // Remover objeto do grupo
+    group.removeWithUpdate(object);
+    canvas.add(object); // Adicionar de volta ao canvas
+    canvas.renderAll();
+    console.log('➖ Objeto removido do Clip Group');
+  }, []);
+
+  // Converter Clip Group de volta para objeto normal
+  const convertClipGroupToNormal = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const activeObject = canvas.getActiveObject();
+
+    if (!activeObject || activeObject.type !== 'group') {
+      console.warn('⚠️ Selecione um Clip Group');
+      return;
+    }
+
+    const clipGroup = activeObject as any;
+
+    if (!clipGroup._isClipGroup) {
+      console.warn('⚠️ Objeto não é um Clip Group');
+      return;
+    }
+
+    // Remover clipPath
+    clipGroup.set('clipPath', null);
+
+    // Remover marcadores
+    delete clipGroup._isClipGroup;
+    delete clipGroup._clipShape;
+    delete clipGroup._isClipGroupEditMode;
+
+    canvas.renderAll();
+    console.log('🔓 Clip Group convertido para grupo normal');
+  }, []);
+
+  // Exportar canvas como imagem PNG
+  const exportCanvasImage = useCallback(() => {
+    if (!fabricCanvasRef.current) return null;
+
+    const canvas = fabricCanvasRef.current;
+    const workAreaWidth = 600;
+    const workAreaHeight = 600;
+
+    // Calcular posição da área de trabalho
+    const left = (canvas.width! - workAreaWidth) / 2;
+    const top = (canvas.height! - workAreaHeight) / 2;
+
+    // Esconder guia temporariamente
+    const guide = canvas.getObjects().find((obj: any) => obj._isWorkAreaGuide);
+    if (guide) {
+      guide.visible = false;
+    }
+
+    // Exportar apenas a área de trabalho
+    const dataURL = canvas.toDataURL({
+      format: 'png',
+      quality: 1,
+      multiplier: 1,
+      left,
+      top,
+      width: workAreaWidth,
+      height: workAreaHeight,
+    });
+
+    // Mostrar guia novamente
+    if (guide) {
+      guide.visible = true;
+      canvas.renderAll();
+    }
+
+    return dataURL;
+  }, []);
+
+  // Exportar canvas como JSON
+  const exportCanvasJSON = useCallback(() => {
+    if (!fabricCanvasRef.current) return null;
+
+    const canvas = fabricCanvasRef.current;
+    const offset = getWorkAreaOffset();
+
+    // Clonar objetos e ajustar coordenadas para serem relativas à folha
+    const objectsToExport = canvas.getObjects().map((obj: any) => {
+      // Pular guia da área de trabalho
+      if (obj._isWorkAreaGuide) return null;
+
+      const objData = obj.toObject();
+      // Subtrair offset para salvar coordenadas relativas à folha
+      objData.left = (objData.left || 0) - offset.left;
+      objData.top = (objData.top || 0) - offset.top;
+
+      return objData;
+    }).filter(obj => obj !== null);
+
+    const json = {
+      version: '6.0',
+      objects: objectsToExport,
+    };
+
+    // Adiciona informações extras
+    const exportData = {
+      version: '2.0', // Versão 2.0 = coordenadas relativas à folha
+      timestamp: new Date().toISOString(),
+      background: useCreativeStore.getState().background,
+      canvas: json,
+    };
+
+    return exportData;
+  }, []);
+
+  // Importar JSON para o canvas
+  const importCanvasJSON = useCallback((jsonData: any) => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+
+    // Limpa canvas atual
+    canvas.clear();
+
+    // Restaura background se existir
+    if (jsonData.background) {
+      useCreativeStore.getState().updateBackground(jsonData.background);
+    }
+
+    // Carrega objetos do JSON
+    if (jsonData.canvas) {
+      // Verificar se é formato novo (v2.0+) com coordenadas relativas à folha
+      const isRelativeCoords = jsonData.version === '2.0';
+
+      // Primeiro, carrega o JSON normalmente
+      canvas.loadFromJSON(jsonData.canvas, () => {
+        const offset = getWorkAreaOffset();
+
+        // Se for formato novo (v2.0), adicionar offset da área de trabalho
+        if (isRelativeCoords) {
+          canvas.getObjects().forEach((obj: any) => {
+            // Pular guia da área de trabalho
+            if (obj._isWorkAreaGuide) return;
+
+            // As coordenadas vêm relativas à folha, adicionar offset do canvas atual
+            obj.set({
+              left: (obj.left || 0) + offset.left,
+              top: (obj.top || 0) + offset.top,
+            });
+            obj.setCoords();
+          });
+        }
+        // Se for formato antigo (v1.0), já vem com coordenadas absolutas
+
+        // Aplicar clipPath em todos os objetos importados
+        updateWorkAreaGuide();
+        applyCanvasClipPath();
+
+        canvas.renderAll();
+        console.log(`✅ Canvas carregado do JSON (versão ${jsonData.version || '1.0'})`);
+      });
+    }
+  }, []);
+
+  // Baixar design completo (PNG + JSON)
+  const downloadDesign = useCallback(() => {
+    const imageDataUrl = exportCanvasImage();
+    const jsonData = exportCanvasJSON();
+
+    if (!imageDataUrl || !jsonData) {
+      console.error('❌ Erro ao exportar design');
+      return;
+    }
+
+    const timestamp = new Date().getTime();
+
+    // Baixar PNG
+    const linkImage = document.createElement('a');
+    linkImage.href = imageDataUrl;
+    linkImage.download = `design-${timestamp}.png`;
+    linkImage.click();
+
+    // Baixar JSON
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const linkJson = document.createElement('a');
+    linkJson.href = url;
+    linkJson.download = `design-${timestamp}.json`;
+    linkJson.click();
+    URL.revokeObjectURL(url);
+
+    console.log('📥 Design baixado com sucesso!');
+  }, [exportCanvasImage, exportCanvasJSON]);
+
+  // Copiar JSON para clipboard
+  const copyCanvasJSON = useCallback(async () => {
+    const json = exportCanvasJSON();
+    if (!json) return;
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+      console.log('📋 JSON copiado para clipboard!');
+    } catch (err) {
+      console.error('❌ Erro ao copiar JSON:', err);
+    }
+  }, [exportCanvasJSON]);
+
+  // Load template function - converts template JSON to Fabric objects
+  const loadTemplate = useCallback(async (template: any) => {
+    if (!fabricCanvasRef.current) {
+      console.error('❌ Canvas not initialized yet');
+      return;
+    }
+
+    const canvas = fabricCanvasRef.current;
+    console.log('🎨 Loading template:', template.name, template);
+
+    try {
+      // Clear canvas
+      canvas.clear();
+
+      // Set canvas background
+      if (template.canvas.backgroundColor) {
+        canvas.backgroundColor = template.canvas.backgroundColor;
+      }
+
+      // Load objects
+      for (const obj of template.objects) {
+        let fabricObj: any = null;
+
+        // Create appropriate Fabric object based on type
+        switch (obj.type) {
+          case 'rect':
+            fabricObj = new Rect({
+              ...obj,
+              centeredRotation: true,
+              centeredScaling: false,
+              snapAngle: 45,
+              snapThreshold: 10,
+            });
+            break;
+
+          case 'circle':
+            fabricObj = new Circle({
+              ...obj,
+              centeredRotation: true,
+              centeredScaling: false,
+              snapAngle: 45,
+              snapThreshold: 10,
+            });
+            break;
+
+          case 'triangle':
+            fabricObj = new Triangle({
+              ...obj,
+              centeredRotation: true,
+              centeredScaling: false,
+              snapAngle: 45,
+              snapThreshold: 10,
+            });
+            break;
+
+          case 'textbox':
+          case 'i-text':
+          case 'text':
+            // Load font if not loaded yet
+            if (obj.fontFamily && obj.fontFamily !== 'Arial') {
+              try {
+                await new Promise<void>((resolve, reject) => {
+                  WebFont.load({
+                    google: { families: [obj.fontFamily] },
+                    active: resolve,
+                    inactive: reject,
+                    timeout: 3000
+                  });
+                });
+                await new FontFaceObserver(obj.fontFamily).load(null, 5000);
+              } catch (error) {
+                console.warn(`Font ${obj.fontFamily} failed to load, using fallback`);
+              }
+            }
+
+            fabricObj = new Textbox(obj.text || 'Text', {
+              ...obj,
+              centeredRotation: true,
+              centeredScaling: false,
+              snapAngle: 45,
+              snapThreshold: 10,
+            });
+            break;
+
+          case 'image':
+            if (obj.src) {
+              try {
+                const img = await FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' });
+                img.set({
+                  left: obj.left,
+                  top: obj.top,
+                  width: obj.width,
+                  height: obj.height,
+                  scaleX: obj.scaleX || 1,
+                  scaleY: obj.scaleY || 1,
+                  angle: obj.angle || 0,
+                  opacity: obj.opacity ?? 1,
+                  selectable: obj.selectable ?? true,
+                  evented: obj.evented ?? true,
+                  centeredRotation: true,
+                  centeredScaling: false,
+                  snapAngle: 45,
+                  snapThreshold: 10,
+                });
+                fabricObj = img;
+              } catch (error) {
+                console.error('Error loading image:', error);
+                // Skip this object if image fails to load
+                continue;
+              }
+            }
+            break;
+
+          case 'line':
+            fabricObj = new Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
+              ...obj,
+              centeredRotation: true,
+              snapAngle: 45,
+              snapThreshold: 10,
+            });
+            break;
+
+          default:
+            console.warn(`Unknown object type: ${obj.type}`);
+            continue;
+        }
+
+        if (fabricObj) {
+          (fabricObj as any).lockedDegree = null;
+          canvas.add(fabricObj);
+        }
+      }
+
+      canvas.renderAll();
+      console.log('✅ Template loaded successfully');
+    } catch (error) {
+      console.error('❌ Error loading template:', error);
+    }
   }, []);
 
   // Resize canvas function
@@ -379,45 +1551,120 @@ export function FabricCanvas() {
     const containerWidth = containerRef.current.offsetWidth;
     const containerHeight = containerRef.current.offsetHeight;
 
-    centerObjects();
     canvas.setWidth(containerWidth);
     canvas.setHeight(containerHeight);
+
+    // Adicionar/atualizar retângulo de guia da área de trabalho
+    updateWorkAreaGuide();
+
+    // Aplicar clipPath global no canvas
+    applyCanvasClipPath();
+
     canvas.renderAll();
   };
 
-  // Center objects function
-  const centerObjects = () => {
+  // Adicionar guia da área de trabalho (600x600)
+  const updateWorkAreaGuide = () => {
     if (!fabricCanvasRef.current) return;
 
     const canvas = fabricCanvasRef.current;
+    const workAreaWidth = 600;
+    const workAreaHeight = 600;
+
+    // Remover guia anterior se existir
+    const existingGuide = canvas.getObjects().find((obj: any) => obj._isWorkAreaGuide);
+    if (existingGuide) {
+      canvas.remove(existingGuide);
+    }
+
+    // Calcular posição centralizada
+    const left = (canvas.width! - workAreaWidth) / 2;
+    const top = (canvas.height! - workAreaHeight) / 2;
+
+    // Criar retângulo de guia (borda azul) - invisível
+    const workAreaGuide = new Rect({
+      left,
+      top,
+      width: workAreaWidth,
+      height: workAreaHeight,
+      fill: 'transparent',
+      stroke: 'transparent', // Borda invisível
+      strokeWidth: 0,
+      selectable: false,
+      evented: false,
+      opacity: 0,
+    } as any);
+
+    (workAreaGuide as any)._isWorkAreaGuide = true;
+
+    // Adicionar guia
+    canvas.add(workAreaGuide);
+
+    // Mover guia para frente
+    const objects = canvas.getObjects();
+    const idx = objects.indexOf(workAreaGuide);
+    if (idx !== -1) {
+      objects.splice(idx, 1);
+      objects.push(workAreaGuide);
+    }
+
+    canvas.renderAll();
+  };
+
+  // Função para garantir que a guia fique sempre no topo
+  const bringGuideToFront = () => {
+    if (!fabricCanvasRef.current) return;
+    const canvas = fabricCanvasRef.current;
     const objects = canvas.getObjects();
 
-    if (objects.length === 0) return;
+    // Trazer guia para frente
+    const guide = objects.find((obj: any) => obj._isWorkAreaGuide);
+    if (guide) {
+      const guideIndex = objects.indexOf(guide);
+      if (guideIndex !== -1) {
+        objects.splice(guideIndex, 1);
+        objects.push(guide);
+      }
+    }
 
-    // Calculate bounding box of all objects
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    objects.forEach(obj => {
-      const bounds = obj.getBoundingRect();
-      minX = Math.min(minX, bounds.left);
-      minY = Math.min(minY, bounds.top);
-      maxX = Math.max(maxX, bounds.left + bounds.width);
-      maxY = Math.max(maxY, bounds.top + bounds.height);
+    canvas.renderAll();
+  };
+
+  // Converter coordenadas da folha (0,0 = canto superior esquerdo da área de 600x600) para coordenadas do canvas
+  const getWorkAreaOffset = () => {
+    if (!fabricCanvasRef.current) return { left: 0, top: 0 };
+
+    const canvas = fabricCanvasRef.current;
+    const workAreaWidth = 600;
+    const workAreaHeight = 600;
+    const left = (canvas.width! - workAreaWidth) / 2;
+    const top = (canvas.height! - workAreaHeight) / 2;
+
+    return { left, top };
+  };
+
+  // Aplicar clipPath global no canvas para mascarar partes fora da área
+  const applyCanvasClipPath = () => {
+    if (!fabricCanvasRef.current) return;
+
+    const canvas = fabricCanvasRef.current;
+    const workAreaWidth = 600;
+    const workAreaHeight = 600;
+    const left = (canvas.width! - workAreaWidth) / 2;
+    const top = (canvas.height! - workAreaHeight) / 2;
+
+    // Criar clipPath global no canvas
+    const clipRect = new Rect({
+      left: left,
+      top: top,
+      width: workAreaWidth,
+      height: workAreaHeight,
+      absolutePositioned: true,
     });
 
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const canvasCenterX = canvas.width! / 2;
-    const canvasCenterY = canvas.height! / 2;
-    const deltaX = canvasCenterX - centerX;
-    const deltaY = canvasCenterY - centerY;
-
-    objects.forEach(obj => {
-      obj.set({
-        left: obj.left! + deltaX,
-        top: obj.top! + deltaY
-      });
-      obj.setCoords();
-    });
+    canvas.clipPath = clipRect;
+    canvas.controlsAboveOverlay = true; // Mostrar controles acima do clipPath
+    canvas.requestRenderAll();
   };
 
   // Smart Guides: Initialize aligning guidelines
@@ -600,9 +1847,7 @@ export function FabricCanvas() {
       horizontalLines = [];
     });
 
-    canvas.on('mouse:up', () => {
-      canvas.renderAll();
-    });
+    // Mouse up handler já está definido mais abaixo com lógica completa
   };
 
   // Draw rotate guidelines
@@ -714,6 +1959,9 @@ export function FabricCanvas() {
     });
     fabricCanvasRef.current = canvas;
 
+    // Register canvas instance in store
+    useCreativeStore.getState().setFabricCanvas(canvas);
+
     // Get context for guidelines
     contextLinesRef.current = canvas.getSelectionContext();
 
@@ -725,16 +1973,19 @@ export function FabricCanvas() {
     // Initial resize
     resizeCanvas();
 
-    // Add initial box
+    // Obter offset da área de trabalho
+    const workAreaOffset = getWorkAreaOffset();
+
+    // Add initial box (coordenadas relativas à folha)
     const box = new Rect({
       width: 200,
       height: 100,
-      top: 70,
-      left: 120,
+      top: workAreaOffset.top + 70,
+      left: workAreaOffset.left + 120,
       fill: 'blue',
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
       lockRotation: false,
     } as any);
@@ -745,16 +1996,16 @@ export function FabricCanvas() {
 
     canvas.add(box);
 
-    // Add a second box to test alignment
+    // Add a second box to test alignment (coordenadas relativas à folha)
     const box2 = new Rect({
       width: 150,
       height: 150,
-      top: 200,
-      left: 300,
+      top: workAreaOffset.top + 200,
+      left: workAreaOffset.left + 300,
       fill: 'red',
       centeredRotation: true,
       centeredScaling: false,
-      snapAngle: 45,
+      snapAngle: snapAngleDegrees,
       snapThreshold: 10,
       lockRotation: false,
     } as any);
@@ -764,7 +2015,6 @@ export function FabricCanvas() {
     (box2 as any).lockedDegree = null;
 
     canvas.add(box2);
-    centerObjects();
 
     // Initialize Smart Guides alignment
     initAligningGuidelines(canvas);
@@ -827,28 +2077,45 @@ export function FabricCanvas() {
         activeObject.set('fill', newFill);
         canvas.renderAll();
       }
+
+      // Trazer guia para frente sempre que um objeto for modificado
+      bringGuideToFront();
     });
 
-    // Object added event
+
     canvas.on('object:added', (event: any) => {
       const target = event.target;
 
+      target.set({
+        transparentCorners: false,
+        borderColor: "oklch(0.5854 0.2041 277.1173)",
+        cornerColor: "tomato",
+        cornerSize: 8,
+      });
+
       if (target.type !== "path") {
         target.set({
-          snapAngle: 45,
+          snapAngle: snapAngleDegrees,
           snapThreshold: 10,
         });
       }
 
       if (target.type === "group") {
         target.set({
-          snapAngle: 45,
+          snapAngle: snapAngleDegrees,
           snapThreshold: 10,
           top: target.top + (target.height / 2) + (target.strokeWidth / 2),
           left: target.left + (target.width / 2) + (target.strokeWidth / 2),
         });
       }
+
+      // Trazer guia para frente sempre que um objeto for adicionado
+      bringGuideToFront();
+
+      // Reaplicar clipPath para garantir que o novo objeto seja mascarado
+      applyCanvasClipPath();
     });
+
 
     // Selection tracking
     const updateSelectedTextFromObject = (activeObject: any) => {
@@ -901,11 +2168,164 @@ export function FabricCanvas() {
       addHeart,
       addImage,
       addImageFromURL,
+      applyPatternToObject,
+      removePatternFromObject,
+      applyImageAsClipMask,
+      applyClipPathToObject,
+      removeClipPath,
+      convertToImageFrame,
+      removeFrameImage,
+      convertToClipGroup,
+      enterClipGroupEditMode,
+      exitClipGroupEditMode,
+      addToClipGroup,
+      removeFromClipGroup,
+      convertClipGroupToNormal,
     });
 
-    // Handle keyboard events for delete
+    // Register template loading action
+    const setLoadTemplateAction = useCreativeStore.getState().setLoadTemplateAction;
+    setLoadTemplateAction(loadTemplate);
+
+    // Register parametrized actions for AI
+    const setParametrizedActions = useCreativeStore.getState().setParametrizedActions;
+    setParametrizedActions({
+      addTextboxWithParams,
+      addRectangleWithParams,
+      addCircleWithParams,
+      addImageFromURLWithParams,
+    });
+
+    // Register export actions in store
+    const setExportActions = useCreativeStore.getState().setExportActions;
+    setExportActions({
+      exportCanvasImage,
+      exportCanvasJSON,
+      downloadDesign,
+      importCanvasJSON,
+    });
+
+    // Handle keyboard events for delete, copy and paste
+    let clipboard: any = null;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && canvas.getActiveObject()) {
+      // Ignorar se estiver editando texto em um input, textarea ou textbox do Fabric
+      const target = e.target as HTMLElement;
+      const isEditingText =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      const activeObject = canvas.getActiveObject();
+
+      // Se for um textbox em modo de edição, não processar shortcuts
+      if (activeObject && (activeObject.type === 'textbox' || activeObject.type === 'i-text') && (activeObject as any).isEditing) {
+        return;
+      }
+
+      // Ctrl+A - Selecionar tudo (apenas se NÃO estiver em input de texto)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        // Se estiver em input/textarea, deixar o comportamento padrão
+        if (isEditingText) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Filtrar objetos - não selecionar a guia da área de trabalho
+        const allObjects = canvas.getObjects().filter((obj: any) => !obj._isWorkAreaGuide);
+        if (allObjects.length > 0) {
+          canvas.discardActiveObject();
+          const selection = new ActiveSelection(allObjects, { canvas });
+          canvas.setActiveObject(selection);
+          canvas.renderAll();
+          console.log(`✅ ${allObjects.length} objetos selecionados`);
+        }
+
+        return;
+      }
+
+      // Ctrl+C - Copiar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && activeObject && !isEditingText) {
+        e.preventDefault();
+
+        // Serializar objeto com propriedades customizadas
+        clipboard = activeObject.toObject([
+          '_isFrame',
+          '_frameClipPath',
+          '_isFrameImage',
+          '_frameObject',
+          '_isClipShell'
+        ]);
+
+        // Guardar tipo e clipPath se existir
+        clipboard._type = activeObject.type;
+        if (activeObject.clipPath) {
+          clipboard._clipPath = activeObject.clipPath.toObject();
+          clipboard._clipPathType = activeObject.clipPath.type;
+          clipboard._clipPathAbsolutePositioned = activeObject.clipPath.absolutePositioned;
+        }
+
+        console.log('📋 Objeto copiado para clipboard');
+        return;
+      }
+
+      // Ctrl+V - Colar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && clipboard && !isEditingText) {
+        e.preventDefault();
+
+        // Mapear tipos para classes
+        const typeToClass: Record<string, any> = {
+          'rect': Rect,
+          'circle': Circle,
+          'triangle': Triangle,
+          'polygon': Polygon,
+          'image': FabricImage,
+          'line': Line,
+          'textbox': Textbox,
+          'i-text': Textbox,
+        };
+
+        const ClassType = typeToClass[clipboard._type];
+        if (!ClassType || !ClassType.fromObject) {
+          console.error('Tipo de objeto não suportado para colar:', clipboard._type);
+          return;
+        }
+
+        ClassType.fromObject(clipboard).then((cloned: any) => {
+          cloned.set({
+            left: (clipboard.left || 0) + 20,
+            top: (clipboard.top || 0) + 20,
+          });
+
+          // Restaurar clipPath se existir
+          if (clipboard._clipPath) {
+            const ClipClassType = typeToClass[clipboard._clipPathType];
+            if (ClipClassType && ClipClassType.fromObject) {
+              ClipClassType.fromObject(clipboard._clipPath).then((clonedClip: any) => {
+                clonedClip.absolutePositioned = clipboard._clipPathAbsolutePositioned;
+                cloned.clipPath = clonedClip;
+                canvas.add(cloned);
+                canvas.setActiveObject(cloned);
+                canvas.renderAll();
+                console.log('✅ Objeto colado com clipPath');
+              });
+              return;
+            }
+          }
+
+          canvas.add(cloned);
+          canvas.setActiveObject(cloned);
+          canvas.renderAll();
+          console.log('✅ Objeto colado');
+        });
+
+        return;
+      }
+
+      // Delete - Deletar objeto(s) selecionado(s)
+      if (e.key === 'Delete' && activeObject) {
         const activeObjects = canvas.getActiveObjects();
         if (activeObjects.length > 0) {
           activeObjects.forEach((obj) => {
@@ -925,11 +2345,12 @@ export function FabricCanvas() {
 
     // Cleanup
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
       canvas.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setCanvasActions, setSelectedText, addRectangle, addTextbox, addCircle, addTriangle, addLine, addStar, addHeart, addImage, addImageFromURL]);
+  }, [setCanvasActions, setSelectedText, addRectangle, addTextbox, addCircle, addTriangle, addLine, addStar, addHeart, addImage, addImageFromURL, loadTemplate, addTextboxWithParams, addRectangleWithParams, addCircleWithParams, addImageFromURLWithParams, exportCanvasImage, exportCanvasJSON, downloadDesign]);
 
   // Apply text property changes from store to canvas
   useEffect(() => {
@@ -959,19 +2380,44 @@ export function FabricCanvas() {
     }
   }, [selectedText]);
 
-  return (
-    <div
-      ref={containerRef}
-      id="canvas_container"
-      style={{ width: '600px', height: '600px', position: 'relative' }}
-    >
-      <div style={{ width: '600px', height: '600px', position: 'relative' }}>
-        <Background />
-      </div>
+  // Expõe funções globalmente para debug/uso no console
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).exportCanvasJSON = exportCanvasJSON;
+      (window as any).exportCanvasImage = exportCanvasImage;
+      (window as any).importCanvasJSON = importCanvasJSON;
+      (window as any).downloadDesign = downloadDesign;
+      (window as any).copyCanvasJSON = copyCanvasJSON;
+    }
+  }, [exportCanvasJSON, exportCanvasImage, importCanvasJSON, downloadDesign, copyCanvasJSON]);
 
-      <div style={{ position: 'absolute', top: 0, left: 0 }}>
-        <canvas ref={canvasRef} id="myCanvas" />
+  return (
+    <CanvasContextMenu>
+      <div
+        ref={containerRef}
+        id="canvas_container"
+        style={{ width: '100%', height: '100%', position: 'relative' }}
+      >
+
+        <div
+          ref={containerRef}
+          id="canvas_container"
+          className="relative  flex items-center justify-center ">
+
+          {/* Conteúdo de fundo */}
+          <div className="z-0">
+            <div>
+              <Background />
+            </div>
+            <div>
+              <canvas ref={canvasRef} id="myCanvas" />
+            </div>
+          </div>
+        </div>
+
+
+
       </div>
-    </div>
+    </CanvasContextMenu>
   );
 }

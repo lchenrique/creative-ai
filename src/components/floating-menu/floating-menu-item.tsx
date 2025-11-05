@@ -17,7 +17,7 @@ export const FloatingMenuItem = ({ trigger, menuContent, contentTitle }: Floatin
             <PopoverTrigger asChild>
                 {trigger}
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0 overflow-hidden" side="right" align="center">
+            <PopoverContent className="overflow-hidden w-min" side="right" align="center">
                 <div>
                     {contentTitle && (
                         <div className="px-4 py-2 border-b border-border bg-popover">

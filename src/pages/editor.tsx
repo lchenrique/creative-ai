@@ -2,7 +2,11 @@ import { ArtPreview } from "@/components/art-preview"
 import { ChatSidebar } from "@/components/chat-sidebar"
 import { FloatingMenus } from "@/components/floating-menu/floating-menus"
 import { PageHeader } from "@/components/layout/page-header"
-import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Download, Upload } from "lucide-react"
+import { useCreativeStore } from "@/stores/creative-store"
+import { useState, useRef } from "react"
+import { ClipGroupManager } from "@/components/clip-group-manager"
 
 export type ArtConfig = {
   theme: "modern" | "minimal" | "bold" | "elegant"
@@ -52,23 +56,77 @@ export function EditorPage() {
     },
   })
 
+  const downloadDesign = useCreativeStore((state) => state.downloadDesign)
+  const importCanvasJSON = useCreativeStore((state) => state.importCanvasJSON)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const handleDownload = () => {
+    if (downloadDesign) {
+      downloadDesign()
+    } else {
+      console.error('❌ Função de download não disponível ainda')
+    }
+  }
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const jsonData = JSON.parse(event.target?.result as string)
+        if (importCanvasJSON) {
+          importCanvasJSON(jsonData)
+          console.log('✅ Design importado com sucesso!')
+        }
+      } catch (error) {
+        console.error('❌ Erro ao importar design:', error)
+      }
+    }
+    reader.readAsText(file)
+
+    // Reset input para permitir importar o mesmo arquivo novamente
+    e.target.value = ''
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <PageHeader title="Editor" />
+      <PageHeader title="Editor">
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button onClick={handleImportClick} variant="outline" disabled={!importCanvasJSON}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importar Design
+          </Button>
+          <Button onClick={handleDownload} disabled={!downloadDesign}>
+            <Download className="w-4 h-4 mr-2" />
+            Salvar Design
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Sidebar */}
         <ChatSidebar artConfig={artConfig} setArtConfig={setArtConfig} />
 
         {/* Preview Area */}
-        <div className="flex-1 flex items-center justify-center  p-8 relative">
-          <div className="relative">
-            <ArtPreview />
-            <FloatingMenus />
-          </div>
+        <div className="flex-1 relative bg-muted/30">
+          <ClipGroupManager />
+          <ArtPreview />
+          <FloatingMenus />
         </div>
       </div>
     </div>
