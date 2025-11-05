@@ -156,7 +156,7 @@ export const Canvas = () => {
     };
 
     return (
-        <div 
+        <div
             className="relative w-full h-full bg-gray-200 overflow-auto flex items-start justify-center p-8"
             onMouseDown={(e) => {
                 // Deseleciona se clicar fora da folha (na área cinza)
@@ -184,400 +184,400 @@ export const Canvas = () => {
                     >
                         {/* Container de elementos */}
                         {elements.map(el => {
-                    // Não renderiza elementos que pertencem a um grupo (serão renderizados dentro do grupo)
-                    if (el.groupId && !el.isGroup) return null;
+                            // Não renderiza elementos que pertencem a um grupo (serão renderizados dentro do grupo)
+                            if (el.groupId && !el.isGroup) return null;
 
-                    return (
-                        <div
-                            key={el.id}
-                            ref={(ref) => { targetRefs.current[el.id] = ref; }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                                    // Multi-select com Shift/Ctrl
-                                    setSelectedIds(prev =>
-                                        prev.includes(el.id)
-                                            ? prev.filter(id => id !== el.id)
-                                            : [...prev, el.id]
-                                    );
-                                } else {
-                                    // Select único
-                                    setSelectedIds([el.id]);
-                                }
-                            }}
-                            data-element-id={el.id}
-                            className={`element absolute select-none ${el.isGroup ? 'border-2 border-dashed border-blue-400' : `rounded shadow ${el.color}`} cursor-move ${selectedIds.includes(el.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                                }`}
-                            style={{
-                                left: 0,
-                                top: 0,
-                                width: `${el.w}px`,
-                                height: `${el.h}px`,
-                                transform: `translate(${el.x}px, ${el.y}px) rotate(${el.angle}deg)`,
-                                transformOrigin: '50% 50%',
-                            }}
-                        >
-                            {el.isGroup ? (
-                                // Renderiza filhos dentro do grupo
-                                <>
-                                    {el.children?.map(childId => {
-                                        const child = elements.find(e => e.id === childId);
-                                        if (!child) return null;
-                                        return (
-                                            <div
-                                                key={child.id}
-                                                className={`absolute rounded shadow ${child.color}`}
-                                                style={{
-                                                    left: `${child.x - el.x}px`,
-                                                    top: `${child.y - el.y}px`,
-                                                    width: `${child.w}px`,
-                                                    height: `${child.h}px`,
-                                                    transform: `rotate(${child.angle}deg)`,
-                                                    transformOrigin: '50% 50%',
-                                                }}
-                                            >
-                                                <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
-                                                    Elemento {child.id}
-                                                </div>
+                            return (
+                                <div
+                                    key={el.id}
+                                    ref={(ref) => { targetRefs.current[el.id] = ref; }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                                            // Multi-select com Shift/Ctrl
+                                            setSelectedIds(prev =>
+                                                prev.includes(el.id)
+                                                    ? prev.filter(id => id !== el.id)
+                                                    : [...prev, el.id]
+                                            );
+                                        } else {
+                                            // Select único
+                                            setSelectedIds([el.id]);
+                                        }
+                                    }}
+                                    data-element-id={el.id}
+                                    className={`element absolute select-none ${el.isGroup ? 'border-2 border-dashed border-blue-400' : `rounded shadow ${el.color}`} cursor-move ${selectedIds.includes(el.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                                        }`}
+                                    style={{
+                                        left: 0,
+                                        top: 0,
+                                        width: `${el.w}px`,
+                                        height: `${el.h}px`,
+                                        transform: `translate(${el.x}px, ${el.y}px) rotate(${el.angle}deg)`,
+                                        transformOrigin: '50% 50%',
+                                    }}
+                                >
+                                    {el.isGroup ? (
+                                        // Renderiza filhos dentro do grupo
+                                        <>
+                                            {el.children?.map(childId => {
+                                                const child = elements.find(e => e.id === childId);
+                                                if (!child) return null;
+                                                return (
+                                                    <div
+                                                        key={child.id}
+                                                        className={`absolute rounded shadow ${child.color}`}
+                                                        style={{
+                                                            left: `${child.x - el.x}px`,
+                                                            top: `${child.y - el.y}px`,
+                                                            width: `${child.w}px`,
+                                                            height: `${child.h}px`,
+                                                            transform: `rotate(${child.angle}deg)`,
+                                                            transformOrigin: '50% 50%',
+                                                        }}
+                                                    >
+                                                        <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
+                                                            Elemento {child.id}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                                Grupo {el.id}
                                             </div>
-                                        );
-                                    })}
-                                    <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
-                                        Grupo {el.id}
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
-                                    Elemento {el.id}
+                                        </>
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
+                                            Elemento {el.id}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
+                            );
+                        })}
 
-                {selectedIds.length > 0 && (
-                    <Moveable
-                        ref={moveableRef}
-                        target={getSelectedTargets()}
-                        draggable={true}
-                        resizable={true}
-                        rotatable={true}
-                        keepRatio={false}
-                        throttleDrag={0}
-                        throttleResize={0}
-                        throttleRotate={5}
-                        edge={false}
+                        {selectedIds.length > 0 && (
+                            <Moveable
+                                ref={moveableRef}
+                                target={getSelectedTargets()}
+                                draggable={true}
+                                resizable={true}
+                                rotatable={true}
+                                keepRatio={false}
+                                throttleDrag={0}
+                                throttleResize={0}
+                                throttleRotate={5}
+                                edge={false}
 
-                        // Snappable configuration
-                        snappable={true}
-                        snapThreshold={5}
-                        isDisplaySnapDigit={true}
-                        snapGap={true}
-                        snapDigit={0}
+                                // Snappable configuration
+                                snappable={true}
+                                snapThreshold={5}
+                                isDisplaySnapDigit={true}
+                                snapGap={true}
+                                snapDigit={0}
 
-                        // Guidelines
-                        elementGuidelines={getElementGuidelines()}
+                                // Guidelines
+                                elementGuidelines={getElementGuidelines()}
 
-                        // Rotation snap - snap every 5 degrees
-                        snapRotationThreshold={5}
-                        snapRotationDegrees={[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-                            95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180,
-                            185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270,
-                            275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355]}
+                                // Rotation snap - snap every 5 degrees
+                                snapRotationThreshold={5}
+                                snapRotationDegrees={[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
+                                    95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180,
+                                    185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270,
+                                    275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355]}
 
-                        origin={false}
+                                origin={false}
 
-                        // Single element events
-                        onDrag={(e) => {
-                            if (selectedIds.length === 1) {
-                                e.target.style.transform = e.transform;
-                            }
-                        }}
-                        onDragStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onDragEnd={(e) => {
-                            setIsDragging(false);
-                            if (selectedIds.length === 1 && e.lastEvent?.translate) {
-                                const translate = e.lastEvent.translate;
-                                const id = Number(e.target.getAttribute('data-element-id'));
-                                if (!isNaN(id)) {
-                                    const element = elements.find(el => el.id === id);
-                                    if (element?.isGroup && element.children) {
-                                        // Atualiza o grupo e seus filhos
-                                        const deltaX = translate[0] - element.x;
-                                        const deltaY = translate[1] - element.y;
-
-                                        setElements(prev => prev.map(el => {
-                                            if (el.id === id) {
-                                                return { ...el, x: translate[0], y: translate[1] };
-                                            }
-                                            if (element.children?.includes(el.id)) {
-                                                return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                                            }
-                                            return el;
-                                        }));
-                                    } else {
-                                        updateElement(id, {
-                                            x: translate[0],
-                                            y: translate[1],
-                                        });
+                                // Single element events
+                                onDrag={(e) => {
+                                    if (selectedIds.length === 1) {
+                                        e.target.style.transform = e.transform;
                                     }
-                                }
-                            }
-                        }}
+                                }}
+                                onDragStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onDragEnd={(e) => {
+                                    setIsDragging(false);
+                                    if (selectedIds.length === 1 && e.lastEvent?.translate) {
+                                        const translate = e.lastEvent.translate;
+                                        const id = Number(e.target.getAttribute('data-element-id'));
+                                        if (!isNaN(id)) {
+                                            const element = elements.find(el => el.id === id);
+                                            if (element?.isGroup && element.children) {
+                                                // Atualiza o grupo e seus filhos
+                                                const deltaX = translate[0] - element.x;
+                                                const deltaY = translate[1] - element.y;
 
-                        // Group events (multiple elements)
-                        onDragGroup={(e) => {
-                            e.events.forEach(ev => {
-                                ev.target.style.transform = ev.transform;
-                            });
-                        }}
-                        onDragGroupStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onDragGroupEnd={(e) => {
-                            setIsDragging(false);
-                            e.events.forEach(ev => {
-                                if (ev.lastEvent?.translate) {
-                                    const translate = ev.lastEvent.translate;
-                                    const id = Number(ev.target.getAttribute('data-element-id'));
+                                                setElements(prev => prev.map(el => {
+                                                    if (el.id === id) {
+                                                        return { ...el, x: translate[0], y: translate[1] };
+                                                    }
+                                                    if (element.children?.includes(el.id)) {
+                                                        return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                                                    }
+                                                    return el;
+                                                }));
+                                            } else {
+                                                updateElement(id, {
+                                                    x: translate[0],
+                                                    y: translate[1],
+                                                });
+                                            }
+                                        }
+                                    }
+                                }}
+
+                                // Group events (multiple elements)
+                                onDragGroup={(e) => {
+                                    e.events.forEach(ev => {
+                                        ev.target.style.transform = ev.transform;
+                                    });
+                                }}
+                                onDragGroupStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onDragGroupEnd={(e) => {
+                                    setIsDragging(false);
+                                    e.events.forEach(ev => {
+                                        if (ev.lastEvent?.translate) {
+                                            const translate = ev.lastEvent.translate;
+                                            const id = Number(ev.target.getAttribute('data-element-id'));
+                                            if (!isNaN(id)) {
+                                                updateElement(id, {
+                                                    x: translate[0],
+                                                    y: translate[1],
+                                                });
+                                            }
+                                        }
+                                    });
+                                }}
+
+                                onResizeGroup={(e) => {
+                                    e.events.forEach(ev => {
+                                        ev.target.style.width = `${ev.width}px`;
+                                        ev.target.style.height = `${ev.height}px`;
+                                        ev.target.style.transform = ev.drag.transform;
+                                    });
+                                }}
+                                onResizeGroupStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onResizeGroupEnd={(e) => {
+                                    setIsDragging(false);
+                                    e.events.forEach(ev => {
+                                        if (!ev.lastEvent) return;
+                                        const translate = ev.lastEvent.drag.translate;
+                                        const id = Number(ev.target.getAttribute('data-element-id'));
+                                        if (!isNaN(id) && ev.lastEvent.width && ev.lastEvent.height) {
+                                            updateElement(id, {
+                                                x: translate[0],
+                                                y: translate[1],
+                                                w: ev.lastEvent.width,
+                                                h: ev.lastEvent.height,
+                                            });
+                                        }
+                                    });
+                                }}
+
+                                onRotateGroup={(e) => {
+                                    e.events.forEach(ev => {
+                                        ev.target.style.transform = ev.drag.transform;
+                                    });
+                                }}
+                                onRotateGroupStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onRotateGroupEnd={(e) => {
+                                    setIsDragging(false);
+                                    e.events.forEach(ev => {
+                                        if (!ev.lastEvent?.drag.translate) return;
+                                        const translate = ev.lastEvent.drag.translate;
+                                        const id = Number(ev.target.getAttribute('data-element-id'));
+                                        if (!isNaN(id)) {
+                                            updateElement(id, {
+                                                x: translate[0],
+                                                y: translate[1],
+                                                angle: ev.lastEvent.rotate,
+                                            });
+                                        }
+                                    });
+                                }}
+
+                                onResize={(e) => {
+                                    e.target.style.width = `${e.width}px`;
+                                    e.target.style.height = `${e.height}px`;
+                                    e.target.style.transform = e.drag.transform;
+                                }}
+                                onResizeStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onResizeEnd={(e) => {
+                                    setIsDragging(false);
+                                    if (!e.lastEvent) return;
+                                    const translate = e.lastEvent.drag.translate;
+                                    const id = Number(e.target.getAttribute('data-element-id'));
+                                    if (!isNaN(id) && e.lastEvent.width && e.lastEvent.height) {
+                                        const element = elements.find(el => el.id === id);
+                                        if (element?.isGroup && element.children) {
+                                            // Calcula escala do resize
+                                            const scaleX = e.lastEvent.width / element.w;
+                                            const scaleY = e.lastEvent.height / element.h;
+
+                                            setElements(prev => prev.map(el => {
+                                                if (el.id === id) {
+                                                    return {
+                                                        ...el,
+                                                        x: translate[0],
+                                                        y: translate[1],
+                                                        w: e.lastEvent!.width,
+                                                        h: e.lastEvent!.height,
+                                                    };
+                                                }
+                                                if (element.children?.includes(el.id)) {
+                                                    // Escala e reposiciona filhos
+                                                    const relX = el.x - element.x;
+                                                    const relY = el.y - element.y;
+                                                    return {
+                                                        ...el,
+                                                        x: translate[0] + (relX * scaleX),
+                                                        y: translate[1] + (relY * scaleY),
+                                                        w: el.w * scaleX,
+                                                        h: el.h * scaleY,
+                                                    };
+                                                }
+                                                return el;
+                                            }));
+                                        } else {
+                                            updateElement(id, {
+                                                x: translate[0],
+                                                y: translate[1],
+                                                w: e.lastEvent.width,
+                                                h: e.lastEvent.height,
+                                            });
+                                        }
+                                    }
+                                }}
+
+                                onRotate={(e) => {
+                                    e.target.style.transform = e.drag.transform;
+                                }}
+                                onRotateStart={() => {
+                                    setIsDragging(true);
+                                }}
+                                onRotateEnd={(e) => {
+                                    setIsDragging(false);
+                                    if (!e.lastEvent?.drag.translate) return;
+                                    const translate = e.lastEvent.drag.translate;
+                                    const id = Number(e.target.getAttribute('data-element-id'));
                                     if (!isNaN(id)) {
-                                        updateElement(id, {
-                                            x: translate[0],
-                                            y: translate[1],
-                                        });
+                                        const element = elements.find(el => el.id === id);
+                                        if (element?.isGroup && element.children) {
+                                            // Rotaciona o grupo e seus filhos ao redor do centro do grupo
+                                            const centerX = element.x + element.w / 2;
+                                            const centerY = element.y + element.h / 2;
+                                            const angleDelta = e.lastEvent.rotate - element.angle;
+                                            const rad = (angleDelta * Math.PI) / 180;
+
+                                            setElements(prev => prev.map(el => {
+                                                if (el.id === id) {
+                                                    return {
+                                                        ...el,
+                                                        x: translate[0],
+                                                        y: translate[1],
+                                                        angle: e.lastEvent!.rotate,
+                                                    };
+                                                }
+                                                if (element.children?.includes(el.id)) {
+                                                    // Rotaciona posição do filho ao redor do centro do grupo
+                                                    const childCenterX = el.x + el.w / 2;
+                                                    const childCenterY = el.y + el.h / 2;
+                                                    const relX = childCenterX - centerX;
+                                                    const relY = childCenterY - centerY;
+
+                                                    const newRelX = relX * Math.cos(rad) - relY * Math.sin(rad);
+                                                    const newRelY = relX * Math.sin(rad) + relY * Math.cos(rad);
+
+                                                    return {
+                                                        ...el,
+                                                        x: centerX + newRelX - el.w / 2,
+                                                        y: centerY + newRelY - el.h / 2,
+                                                        angle: el.angle + angleDelta,
+                                                    };
+                                                }
+                                                return el;
+                                            }));
+                                        } else {
+                                            updateElement(id, {
+                                                x: translate[0],
+                                                y: translate[1],
+                                                angle: e.lastEvent.rotate,
+                                            });
+                                        }
                                     }
+                                }}
+                            />
+                        )}
+
+                        {/* Selecto para seleção com retângulo */}
+                        <Selecto
+                            container={paperRef.current}
+                            selectableTargets={['.element']}
+                            hitRate={0}
+                            selectByClick={false}
+                            selectFromInside={false}
+                            toggleContinueSelect={['shift']}
+                            continueSelect={false}
+                            ratio={0}
+                            preventClickEventOnDrag={true}
+                            onSelectEnd={(e) => {
+                                if (isDragging) return;
+
+                                const selected = e.selected.map(el =>
+                                    Number(el.getAttribute('data-element-id'))
+                                ).filter(id => !isNaN(id));
+
+                                if (selected.length > 0) {
+                                    setSelectedIds(selected);
                                 }
-                            });
-                        }}
-
-                        onResizeGroup={(e) => {
-                            e.events.forEach(ev => {
-                                ev.target.style.width = `${ev.width}px`;
-                                ev.target.style.height = `${ev.height}px`;
-                                ev.target.style.transform = ev.drag.transform;
-                            });
-                        }}
-                        onResizeGroupStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onResizeGroupEnd={(e) => {
-                            setIsDragging(false);
-                            e.events.forEach(ev => {
-                                if (!ev.lastEvent) return;
-                                const translate = ev.lastEvent.drag.translate;
-                                const id = Number(ev.target.getAttribute('data-element-id'));
-                                if (!isNaN(id) && ev.lastEvent.width && ev.lastEvent.height) {
-                                    updateElement(id, {
-                                        x: translate[0],
-                                        y: translate[1],
-                                        w: ev.lastEvent.width,
-                                        h: ev.lastEvent.height,
-                                    });
-                                }
-                            });
-                        }}
-
-                        onRotateGroup={(e) => {
-                            e.events.forEach(ev => {
-                                ev.target.style.transform = ev.drag.transform;
-                            });
-                        }}
-                        onRotateGroupStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onRotateGroupEnd={(e) => {
-                            setIsDragging(false);
-                            e.events.forEach(ev => {
-                                if (!ev.lastEvent?.drag.translate) return;
-                                const translate = ev.lastEvent.drag.translate;
-                                const id = Number(ev.target.getAttribute('data-element-id'));
-                                if (!isNaN(id)) {
-                                    updateElement(id, {
-                                        x: translate[0],
-                                        y: translate[1],
-                                        angle: ev.lastEvent.rotate,
-                                    });
-                                }
-                            });
-                        }}
-
-                        onResize={(e) => {
-                            e.target.style.width = `${e.width}px`;
-                            e.target.style.height = `${e.height}px`;
-                            e.target.style.transform = e.drag.transform;
-                        }}
-                        onResizeStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onResizeEnd={(e) => {
-                            setIsDragging(false);
-                            if (!e.lastEvent) return;
-                            const translate = e.lastEvent.drag.translate;
-                            const id = Number(e.target.getAttribute('data-element-id'));
-                            if (!isNaN(id) && e.lastEvent.width && e.lastEvent.height) {
-                                const element = elements.find(el => el.id === id);
-                                if (element?.isGroup && element.children) {
-                                    // Calcula escala do resize
-                                    const scaleX = e.lastEvent.width / element.w;
-                                    const scaleY = e.lastEvent.height / element.h;
-
-                                    setElements(prev => prev.map(el => {
-                                        if (el.id === id) {
-                                            return {
-                                                ...el,
-                                                x: translate[0],
-                                                y: translate[1],
-                                                w: e.lastEvent!.width,
-                                                h: e.lastEvent!.height,
-                                            };
-                                        }
-                                        if (element.children?.includes(el.id)) {
-                                            // Escala e reposiciona filhos
-                                            const relX = el.x - element.x;
-                                            const relY = el.y - element.y;
-                                            return {
-                                                ...el,
-                                                x: translate[0] + (relX * scaleX),
-                                                y: translate[1] + (relY * scaleY),
-                                                w: el.w * scaleX,
-                                                h: el.h * scaleY,
-                                            };
-                                        }
-                                        return el;
-                                    }));
-                                } else {
-                                    updateElement(id, {
-                                        x: translate[0],
-                                        y: translate[1],
-                                        w: e.lastEvent.width,
-                                        h: e.lastEvent.height,
-                                    });
-                                }
-                            }
-                        }}
-
-                        onRotate={(e) => {
-                            e.target.style.transform = e.drag.transform;
-                        }}
-                        onRotateStart={() => {
-                            setIsDragging(true);
-                        }}
-                        onRotateEnd={(e) => {
-                            setIsDragging(false);
-                            if (!e.lastEvent?.drag.translate) return;
-                            const translate = e.lastEvent.drag.translate;
-                            const id = Number(e.target.getAttribute('data-element-id'));
-                            if (!isNaN(id)) {
-                                const element = elements.find(el => el.id === id);
-                                if (element?.isGroup && element.children) {
-                                    // Rotaciona o grupo e seus filhos ao redor do centro do grupo
-                                    const centerX = element.x + element.w / 2;
-                                    const centerY = element.y + element.h / 2;
-                                    const angleDelta = e.lastEvent.rotate - element.angle;
-                                    const rad = (angleDelta * Math.PI) / 180;
-
-                                    setElements(prev => prev.map(el => {
-                                        if (el.id === id) {
-                                            return {
-                                                ...el,
-                                                x: translate[0],
-                                                y: translate[1],
-                                                angle: e.lastEvent!.rotate,
-                                            };
-                                        }
-                                        if (element.children?.includes(el.id)) {
-                                            // Rotaciona posição do filho ao redor do centro do grupo
-                                            const childCenterX = el.x + el.w / 2;
-                                            const childCenterY = el.y + el.h / 2;
-                                            const relX = childCenterX - centerX;
-                                            const relY = childCenterY - centerY;
-
-                                            const newRelX = relX * Math.cos(rad) - relY * Math.sin(rad);
-                                            const newRelY = relX * Math.sin(rad) + relY * Math.cos(rad);
-
-                                            return {
-                                                ...el,
-                                                x: centerX + newRelX - el.w / 2,
-                                                y: centerY + newRelY - el.h / 2,
-                                                angle: el.angle + angleDelta,
-                                            };
-                                        }
-                                        return el;
-                                    }));
-                                } else {
-                                    updateElement(id, {
-                                        x: translate[0],
-                                        y: translate[1],
-                                        angle: e.lastEvent.rotate,
-                                    });
-                                }
-                            }
-                        }}
-                    />
-                )}
-
-                {/* Selecto para seleção com retângulo */}
-                <Selecto
-                    container={paperRef.current}
-                    selectableTargets={['.element']}
-                    hitRate={0}
-                    selectByClick={false}
-                    selectFromInside={false}
-                    toggleContinueSelect={['shift']}
-                    continueSelect={false}
-                    ratio={0}
-                    preventClickEventOnDrag={true}
-                    onSelectEnd={(e) => {
-                        if (isDragging) return;
-                        
-                        const selected = e.selected.map(el =>
-                            Number(el.getAttribute('data-element-id'))
-                        ).filter(id => !isNaN(id));
-                        
-                        if (selected.length > 0) {
-                            setSelectedIds(selected);
-                        }
-                    }}
-                />
-            </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
-            <ContextMenuItem onClick={duplicateSelected} disabled={selectedIds.length === 0}>
-                <Copy className="mr-2 h-4 w-4" />
-                <span>Duplicar</span>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={deleteSelected} disabled={selectedIds.length === 0}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Deletar</span>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-                onClick={groupSelected}
-                disabled={selectedIds.length < 2 || selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
-            >
-                <Group className="mr-2 h-4 w-4" />
-                <span>Agrupar</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-                onClick={ungroupSelected}
-                disabled={!selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
-            >
-                <Ungroup className="mr-2 h-4 w-4" />
-                <span>Desagrupar</span>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={bringToFront} disabled={selectedIds.length === 0}>
-                <BringToFront className="mr-2 h-4 w-4" />
-                <span>Trazer para frente</span>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={sendToBack} disabled={selectedIds.length === 0}>
-                <Send className="mr-2 h-4 w-4" />
-                <span>Enviar para trás</span>
-            </ContextMenuItem>
-        </ContextMenuContent>
-    </ContextMenu>
+                            }}
+                        />
+                    </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-48">
+                    <ContextMenuItem onClick={duplicateSelected} disabled={selectedIds.length === 0}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        <span>Duplicar</span>
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={deleteSelected} disabled={selectedIds.length === 0}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Deletar</span>
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                        onClick={groupSelected}
+                        disabled={selectedIds.length < 2 || selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
+                    >
+                        <Group className="mr-2 h-4 w-4" />
+                        <span>Agrupar</span>
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        onClick={ungroupSelected}
+                        disabled={!selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
+                    >
+                        <Ungroup className="mr-2 h-4 w-4" />
+                        <span>Desagrupar</span>
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={bringToFront} disabled={selectedIds.length === 0}>
+                        <BringToFront className="mr-2 h-4 w-4" />
+                        <span>Trazer para frente</span>
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={sendToBack} disabled={selectedIds.length === 0}>
+                        <Send className="mr-2 h-4 w-4" />
+                        <span>Enviar para trás</span>
+                    </ContextMenuItem>
+                </ContextMenuContent>
+            </ContextMenu>
         </div>
     );
 }
