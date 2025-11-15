@@ -1,583 +1,424 @@
-import { useState, useRef } from "react";
 import Moveable from "react-moveable";
 import Selecto from "react-selecto";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Copy, Trash2, Send, BringToFront, Group, Ungroup } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Background } from "./art-background";
+import { CanvasElementComponent } from "./canvas/canvas-element";
+import { CanvasContextMenuActions } from "./canvas/canvas-context-menu-actions";
+import { MoveableController } from "./canvas/moveable-controller";
+import { useElementSelection } from "@/hooks/useElementSelection";
+import { useElementOperations } from "@/hooks/useElementOperations";
+import { useElementTransform } from "@/hooks/useElementTransform";
+import { useImageConversion } from "@/hooks/useImageConversion";
 
-interface Element {
-    id: number;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    angle: number;
-    color: string;
-    groupId?: number;
-    isGroup?: boolean;
-    children?: number[];
-}
+const PAPER_WIDTH = 600;
+const PAPER_HEIGHT = 600;
 
 export const Canvas = () => {
-    const initial: Element[] = [
-        { id: 1, x: 50, y: 50, w: 150, h: 100, angle: 0, color: 'bg-blue-500' },
-        { id: 2, x: 280, y: 140, w: 180, h: 120, angle: 0, color: 'bg-green-500' },
-        { id: 3, x: 520, y: 220, w: 140, h: 140, angle: 0, color: 'bg-pink-500' }
-    ];
+  // Hooks
+  const { selectedIds, selectElement, clearSelection, selectMultiple } =
+    useElementSelection();
+  const {
+    elements,
+    updateElement,
+    deleteSelected,
+    duplicateElements,
+    bringToFront,
+    sendToBack,
+  } = useElementOperations();
+  const { groupElements, ungroupElements, updateGroupTransform } =
+    useElementTransform();
+  const {
+    isConverting,
+    isConvertingWebP,
+    isRemovingBackground,
+    convertImageToSVG,
+    convertToWebP,
+    removeBackground,
+  } = useImageConversion();
 
-    const [elements, setElements] = useState<Element[]>(initial);
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
-    const [isDragging, setIsDragging] = useState(false);
-    const targetRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-    const paperRef = useRef<HTMLDivElement>(null);
-    const moveableRef = useRef<Moveable>(null);
+  // State
+  const [isDragging, setIsDragging] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [useWarpable, setUseWarpable] = useState(false);
+  const [useClippable, setUseClippable] = useState(false);
 
-    // Dimensões da folha A4 em pixels (escala 1:1 = 794x1123px, usando 2:1 para visualização)
-    const paperWidth = 794;
-    const paperHeight = 1123;
+  // Refs
+  const targetRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const paperRef = useRef<HTMLDivElement>(null);
+  const moveableRef = useRef<Moveable>(null);
 
-    const updateElement = (id: number, updates: Partial<Element>) => {
-        setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
+  // Handlers
+  const handleDuplicate = () => {
+    const newIds = duplicateElements(selectedIds);
+    selectMultiple(newIds);
+  };
+
+  const handleGroup = () => {
+    const groupId = groupElements(selectedIds);
+    if (groupId) {
+      selectMultiple([groupId]);
+    }
+  };
+
+  const handleUngroup = () => {
+    const childIds = ungroupElements(selectedIds);
+    selectMultiple(childIds);
+  };
+
+  const handleConvertToSVG = async () => {
+    if (selectedIds.length !== 1) return;
+    try {
+      await convertImageToSVG(selectedIds[0]);
+    } catch (error) {
+      alert("Erro ao converter imagem para SVG. Tente novamente.");
+    }
+  };
+
+  const handleConvertToWebP = async () => {
+    if (selectedIds.length !== 1) return;
+    const element = elements.find((el) => el.id === selectedIds[0]);
+    if (!element) return;
+
+    try {
+      await convertToWebP(
+        element.id,
+        element.svgContent,
+        element.type === "image" ? element.image : undefined,
+      );
+    } catch (error) {
+      alert("Erro ao converter para WebP. Tente novamente.");
+    }
+  };
+
+  const handleRemoveBackground = async () => {
+    if (selectedIds.length !== 1) return;
+    try {
+      await removeBackground(selectedIds[0]);
+    } catch (error) {
+      alert("Erro ao remover fundo. Tente novamente.");
+    }
+  };
+
+  // Moveable handlers
+  const handleDragEnd = (id: number, x: number, y: number) => {
+    setIsDragging(false);
+    const element = elements.find((el) => el.id === id);
+    if (element?.isGroup) {
+      updateGroupTransform(id, { x, y });
+    } else {
+      updateElement(id, { x, y });
+    }
+  };
+
+  const handleDragGroupEnd = (
+    updates: Array<{ id: number; x: number; y: number }>,
+  ) => {
+    setIsDragging(false);
+    updates.forEach(({ id, x, y }) => {
+      updateElement(id, { x, y });
+    });
+  };
+
+  const handleResizeEnd = (
+    id: number,
+    updates: { x: number; y: number; w: number; h: number; fontSize?: number },
+  ) => {
+    setIsDragging(false);
+    const element = elements.find((el) => el.id === id);
+    if (element?.isGroup) {
+      updateGroupTransform(id, updates);
+    } else {
+      updateElement(id, updates);
+    }
+  };
+
+  const handleResizeGroupEnd = (
+    updates: Array<{ id: number; x: number; y: number; w: number; h: number }>,
+  ) => {
+    setIsDragging(false);
+    updates.forEach(({ id, x, y, w, h }) => {
+      updateElement(id, { x, y, w, h });
+    });
+  };
+
+  const handleRotateEnd = (
+    id: number,
+    updates: { x: number; y: number; angle: number },
+  ) => {
+    setIsDragging(false);
+    const element = elements.find((el) => el.id === id);
+    if (element?.isGroup) {
+      updateGroupTransform(id, updates);
+    } else {
+      updateElement(id, updates);
+    }
+  };
+
+  const handleRotateGroupEnd = (
+    updates: Array<{ id: number; x: number; y: number; angle: number }>,
+  ) => {
+    setIsDragging(false);
+    updates.forEach(({ id, x, y, angle }) => {
+      updateElement(id, { x, y, angle });
+    });
+  };
+
+  // Get selected targets for Moveable
+  const getSelectedTargets = () => {
+    return selectedIds
+      .map((id) => targetRefs.current[id])
+      .filter((ref) => ref !== null) as HTMLDivElement[];
+  };
+
+  // Get element guidelines (all elements except selected)
+  const getElementGuidelines = () => {
+    return Object.entries(targetRefs.current)
+      .filter(
+        ([id]) =>
+          !selectedIds.includes(Number(id)) && targetRefs.current[Number(id)],
+      )
+      .map(([_, ref]) => ref!);
+  };
+
+  // Update Moveable when selection changes
+  useEffect(() => {
+    if (moveableRef.current) {
+      moveableRef.current.updateRect();
+    }
+  }, [selectedIds]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Delete") {
+        deleteSelected();
+      }
     };
 
-    const deleteSelected = () => {
-        setElements(prev => prev.filter(el => !selectedIds.includes(el.id)));
-        setSelectedIds([]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
     };
+  }, [deleteSelected]);
 
-    const duplicateSelected = () => {
-        const newElements = selectedIds.map(id => {
-            const el = elements.find(e => e.id === id);
-            if (!el) return null;
-            return {
-                ...el,
-                id: Math.max(...elements.map(e => e.id)) + 1 + selectedIds.indexOf(id),
-                x: el.x + 20,
-                y: el.y + 20,
-            };
-        }).filter((el): el is Element => el !== null);
+  return (
+    <div
+      id="canvas-editor"
+      className="relative w-full h-full bg-gray-300 flex flex-col items-center justify-center"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          clearSelection();
+        }
+      }}
+    >
+      <div className="flex-1 w-full bg-background z-50 pointer-events-none opacity-90" />
 
-        setElements(prev => [...prev, ...newElements]);
-        setSelectedIds(newElements.map(el => el.id));
-    };
+      <div
+        className="flex items-center justify-center w-full"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            clearSelection();
+          }
+        }}
+      >
+        <div className="flex-1 w-full h-full bg-background z-50 pointer-events-none opacity-90" />
 
-    const bringToFront = () => {
-        setElements(prev => {
-            const selected = prev.filter(el => selectedIds.includes(el.id));
-            const others = prev.filter(el => !selectedIds.includes(el.id));
-            return [...others, ...selected];
-        });
-    };
-
-    const sendToBack = () => {
-        setElements(prev => {
-            const selected = prev.filter(el => selectedIds.includes(el.id));
-            const others = prev.filter(el => !selectedIds.includes(el.id));
-            return [...selected, ...others];
-        });
-    };
-
-    const groupSelected = () => {
-        if (selectedIds.length < 2) return;
-
-        // Encontra o próximo ID disponível para o grupo
-        const groupId = Math.max(...elements.map(e => e.id), 0) + 1;
-
-        // Calcula bounds do grupo
-        const selectedElements = elements.filter(el => selectedIds.includes(el.id));
-        const minX = Math.min(...selectedElements.map(el => el.x));
-        const minY = Math.min(...selectedElements.map(el => el.y));
-        const maxX = Math.max(...selectedElements.map(el => el.x + el.w));
-        const maxY = Math.max(...selectedElements.map(el => el.y + el.h));
-
-        // Cria o elemento de grupo
-        const groupElement: Element = {
-            id: groupId,
-            x: minX,
-            y: minY,
-            w: maxX - minX,
-            h: maxY - minY,
-            angle: 0,
-            color: 'transparent',
-            isGroup: true,
-            children: selectedIds,
-        };
-
-        // Atualiza elementos para referenciar o grupo
-        setElements(prev => {
-            const updated = prev.map(el =>
-                selectedIds.includes(el.id)
-                    ? { ...el, groupId }
-                    : el
-            );
-            return [...updated, groupElement];
-        });
-
-        setSelectedIds([groupId]);
-    };
-
-    const ungroupSelected = () => {
-        const groupIds = selectedIds.filter(id => {
-            const el = elements.find(e => e.id === id);
-            return el?.isGroup;
-        });
-
-        if (groupIds.length === 0) return;
-
-        setElements(prev => {
-            // Remove grupos e limpa groupId dos filhos
-            const ungrouped = prev.filter(el => !groupIds.includes(el.id))
-                .map(el => groupIds.includes(el.groupId || -1)
-                    ? { ...el, groupId: undefined }
-                    : el
-                );
-            return ungrouped;
-        });
-
-        // Seleciona os elementos que estavam no grupo
-        const childIds = elements
-            .filter(el => groupIds.includes(el.id) && el.children)
-            .flatMap(el => el.children || []);
-
-        setSelectedIds(childIds);
-    };
-
-    // Get all element refs except the selected ones for guidelines
-    const getElementGuidelines = () => {
-        return Object.entries(targetRefs.current)
-            .filter(([id]) => !selectedIds.includes(Number(id)) && targetRefs.current[Number(id)])
-            .map(([_, ref]) => ref!);
-    };
-
-    // Get selected targets
-    const getSelectedTargets = () => {
-        return selectedIds
-            .map(id => targetRefs.current[id])
-            .filter(ref => ref !== null) as HTMLDivElement[];
-    };
-
-    return (
-        <div
-            className="relative w-full h-full bg-gray-200 overflow-auto flex items-start justify-center p-8"
-            onMouseDown={(e) => {
-                // Deseleciona se clicar fora da folha (na área cinza)
-                if (e.target === e.currentTarget) {
-                    setSelectedIds([]);
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              id="canvas-paper"
+              ref={paperRef}
+              className="relative shadow-2xl bg-gray-800 row-start-2 col-start-2"
+              style={{
+                width: `${PAPER_WIDTH}px`,
+                height: `${PAPER_HEIGHT}px`,
+              }}
+              onMouseDown={(e) => {
+                if (e.target === paperRef.current) {
+                  clearSelection();
+                  setEditingId(null);
                 }
-            }}
-        >
-            {/* Área da folha (paper) */}
-            <ContextMenu>
-                <ContextMenuTrigger asChild>
-                    <div
-                        ref={paperRef}
-                        className="relative bg-white shadow-2xl"
-                        style={{
-                            width: `${paperWidth}px`,
-                            height: `${paperHeight}px`,
-                        }}
-                        onMouseDown={(e) => {
-                            // Deseleciona apenas se clicar no fundo (não em um elemento)
-                            if (e.target === paperRef.current) {
-                                setSelectedIds([]);
-                            }
-                        }}
-                    >
-                        {/* Container de elementos */}
-                        {elements.map(el => {
-                            // Não renderiza elementos que pertencem a um grupo (serão renderizados dentro do grupo)
-                            if (el.groupId && !el.isGroup) return null;
+              }}
+            >
+              <div className="pointer-events-none">
+                <Background />
+              </div>
 
-                            return (
-                                <div
-                                    key={el.id}
-                                    ref={(ref) => { targetRefs.current[el.id] = ref; }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                                            // Multi-select com Shift/Ctrl
-                                            setSelectedIds(prev =>
-                                                prev.includes(el.id)
-                                                    ? prev.filter(id => id !== el.id)
-                                                    : [...prev, el.id]
-                                            );
-                                        } else {
-                                            // Select único
-                                            setSelectedIds([el.id]);
-                                        }
-                                    }}
-                                    data-element-id={el.id}
-                                    className={`element absolute select-none ${el.isGroup ? 'border-2 border-dashed border-blue-400' : `rounded shadow ${el.color}`} cursor-move ${selectedIds.includes(el.id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                                        }`}
-                                    style={{
-                                        left: 0,
-                                        top: 0,
-                                        width: `${el.w}px`,
-                                        height: `${el.h}px`,
-                                        transform: `translate(${el.x}px, ${el.y}px) rotate(${el.angle}deg)`,
-                                        transformOrigin: '50% 50%',
-                                    }}
-                                >
-                                    {el.isGroup ? (
-                                        // Renderiza filhos dentro do grupo
-                                        <>
-                                            {el.children?.map(childId => {
-                                                const child = elements.find(e => e.id === childId);
-                                                if (!child) return null;
-                                                return (
-                                                    <div
-                                                        key={child.id}
-                                                        className={`absolute rounded shadow ${child.color}`}
-                                                        style={{
-                                                            left: `${child.x - el.x}px`,
-                                                            top: `${child.y - el.y}px`,
-                                                            width: `${child.w}px`,
-                                                            height: `${child.h}px`,
-                                                            transform: `rotate(${child.angle}deg)`,
-                                                            transformOrigin: '50% 50%',
-                                                        }}
-                                                    >
-                                                        <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
-                                                            Elemento {child.id}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
-                                                Grupo {el.id}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-white font-semibold pointer-events-none">
-                                            Elemento {el.id}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+              {/* Render elements */}
+              {elements.map((el) => {
+                // Don't render elements that belong to a group (they're rendered inside the group)
+                if (el.groupId && !el.isGroup) return null;
 
-                        {selectedIds.length > 0 && (
-                            <Moveable
-                                ref={moveableRef}
-                                target={getSelectedTargets()}
-                                draggable={true}
-                                resizable={true}
-                                rotatable={true}
-                                keepRatio={false}
-                                throttleDrag={0}
-                                throttleResize={0}
-                                throttleRotate={5}
-                                edge={false}
+                return (
+                  <CanvasElementComponent
+                    key={el.id}
+                    element={el}
+                    elements={elements}
+                    isSelected={selectedIds.includes(el.id)}
+                    isEditing={editingId === el.id}
+                    onSelect={selectElement}
+                    onEditStart={setEditingId}
+                    onTextChange={(text) => updateElement(el.id, { text })}
+                    onEditEnd={() => setEditingId(null)}
+                    elementRef={(ref) => {
+                      targetRefs.current[el.id] = ref;
+                    }}
+                  />
+                );
+              })}
 
-                                // Snappable configuration
-                                snappable={true}
-                                snapThreshold={5}
-                                isDisplaySnapDigit={true}
-                                snapGap={true}
-                                snapDigit={0}
+              {/* Moveable controller */}
+              <MoveableController
+                ref={moveableRef}
+                targets={getSelectedTargets()}
+                elements={elements}
+                isEditing={editingId !== null}
+                useWarpable={useWarpable}
+                useClippable={useClippable}
+                elementGuidelines={getElementGuidelines()}
+                showHandles={selectedIds.length > 0}
+                selectedIds={selectedIds}
+                onSelectForDrag={(id) => {
+                  flushSync(() => {
+                    selectElement(id, false);
+                  });
+                }}
+                onDragStart={() => setIsDragging(true)}
+                onDragEnd={handleDragEnd}
+                onDragGroupEnd={handleDragGroupEnd}
+                onResizeStart={() => setIsDragging(true)}
+                onResizeEnd={handleResizeEnd}
+                onResizeGroupEnd={handleResizeGroupEnd}
+                onRotateStart={() => setIsDragging(true)}
+                onRotateEnd={handleRotateEnd}
+                onRotateGroupEnd={handleRotateGroupEnd}
+                onWarpStart={() => setIsDragging(true)}
+                onWarpEnd={() => setIsDragging(false)}
+                onClip={(target, clipStyle) => {
+                  console.log("onClip", clipStyle);
+                }}
+              />
+            </div>
+          </ContextMenuTrigger>
 
-                                // Guidelines
-                                elementGuidelines={getElementGuidelines()}
+          <ContextMenuContent className="w-48">
+            <CanvasContextMenuActions
+              selectedIds={selectedIds}
+              elements={elements}
+              useWarpable={useWarpable}
+              useClippable={useClippable}
+              isConverting={isConverting}
+              isConvertingWebP={isConvertingWebP}
+              isRemovingBackground={isRemovingBackground}
+              onDuplicate={handleDuplicate}
+              onDelete={deleteSelected}
+              onConvertToSVG={handleConvertToSVG}
+              onConvertToWebP={handleConvertToWebP}
+              onRemoveBackground={handleRemoveBackground}
+              onGroup={handleGroup}
+              onUngroup={handleUngroup}
+              onBringToFront={() => bringToFront(selectedIds)}
+              onSendToBack={() => sendToBack(selectedIds)}
+              onToggleWarpable={setUseWarpable}
+              onToggleClippable={() => setUseClippable(!useClippable)}
+            />
+          </ContextMenuContent>
+        </ContextMenu>
 
-                                // Rotation snap - snap every 5 degrees
-                                snapRotationThreshold={5}
-                                snapRotationDegrees={[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-                                    95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180,
-                                    185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270,
-                                    275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355]}
+        <div className="flex-1 w-full h-full bg-background z-50 pointer-events-none opacity-90" />
+      </div>
 
-                                origin={false}
+      <div className="flex-1 w-full bg-background z-50 pointer-events-none opacity-90" />
 
-                                // Single element events
-                                onDrag={(e) => {
-                                    if (selectedIds.length === 1) {
-                                        e.target.style.transform = e.transform;
-                                    }
-                                }}
-                                onDragStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onDragEnd={(e) => {
-                                    setIsDragging(false);
-                                    if (selectedIds.length === 1 && e.lastEvent?.translate) {
-                                        const translate = e.lastEvent.translate;
-                                        const id = Number(e.target.getAttribute('data-element-id'));
-                                        if (!isNaN(id)) {
-                                            const element = elements.find(el => el.id === id);
-                                            if (element?.isGroup && element.children) {
-                                                // Atualiza o grupo e seus filhos
-                                                const deltaX = translate[0] - element.x;
-                                                const deltaY = translate[1] - element.y;
+      {/* Selecto for rectangle selection */}
+      <Selecto
+        container={paperRef.current}
+        selectableTargets={[".element"]}
+        hitRate={0}
+        selectByClick={true}
+        selectFromInside={false}
+        toggleContinueSelect={["shift"]}
+        continueSelect={false}
+        ratio={0}
+        preventClickEventOnDrag={true}
+        dragCondition={(e) => {
+          if (isDragging) return false;
+          return true;
+        }}
+        onDragStart={(e) => {
+          const inputEvent = e.inputEvent;
+          const target = inputEvent.target as HTMLElement;
 
-                                                setElements(prev => prev.map(el => {
-                                                    if (el.id === id) {
-                                                        return { ...el, x: translate[0], y: translate[1] };
-                                                    }
-                                                    if (element.children?.includes(el.id)) {
-                                                        return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                                                    }
-                                                    return el;
-                                                }));
-                                            } else {
-                                                updateElement(id, {
-                                                    x: translate[0],
-                                                    y: translate[1],
-                                                });
-                                            }
-                                        }
-                                    }
-                                }}
+          console.log("Selecto onDragStart", {
+            target: target.className,
+            selectedIds,
+            isMoveableElement: moveableRef.current?.isMoveableElement(target),
+          });
 
-                                // Group events (multiple elements)
-                                onDragGroup={(e) => {
-                                    e.events.forEach(ev => {
-                                        ev.target.style.transform = ev.transform;
-                                    });
-                                }}
-                                onDragGroupStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onDragGroupEnd={(e) => {
-                                    setIsDragging(false);
-                                    e.events.forEach(ev => {
-                                        if (ev.lastEvent?.translate) {
-                                            const translate = ev.lastEvent.translate;
-                                            const id = Number(ev.target.getAttribute('data-element-id'));
-                                            if (!isNaN(id)) {
-                                                updateElement(id, {
-                                                    x: translate[0],
-                                                    y: translate[1],
-                                                });
-                                            }
-                                        }
-                                    });
-                                }}
+          // Para se clicar em handles do Moveable
+          if (moveableRef.current?.isMoveableElement(target)) {
+            console.log("Stopping - is moveable element");
+            e.stop();
+            return;
+          }
 
-                                onResizeGroup={(e) => {
-                                    e.events.forEach(ev => {
-                                        ev.target.style.width = `${ev.width}px`;
-                                        ev.target.style.height = `${ev.height}px`;
-                                        ev.target.style.transform = ev.drag.transform;
-                                    });
-                                }}
-                                onResizeGroupStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onResizeGroupEnd={(e) => {
-                                    setIsDragging(false);
-                                    e.events.forEach(ev => {
-                                        if (!ev.lastEvent) return;
-                                        const translate = ev.lastEvent.drag.translate;
-                                        const id = Number(ev.target.getAttribute('data-element-id'));
-                                        if (!isNaN(id) && ev.lastEvent.width && ev.lastEvent.height) {
-                                            updateElement(id, {
-                                                x: translate[0],
-                                                y: translate[1],
-                                                w: ev.lastEvent.width,
-                                                h: ev.lastEvent.height,
-                                            });
-                                        }
-                                    });
-                                }}
+          // Verifica se clicou em algum elemento (não no canvas vazio)
+          const clickedElement = target.closest(".element") as HTMLElement;
 
-                                onRotateGroup={(e) => {
-                                    e.events.forEach(ev => {
-                                        ev.target.style.transform = ev.drag.transform;
-                                    });
-                                }}
-                                onRotateGroupStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onRotateGroupEnd={(e) => {
-                                    setIsDragging(false);
-                                    e.events.forEach(ev => {
-                                        if (!ev.lastEvent?.drag.translate) return;
-                                        const translate = ev.lastEvent.drag.translate;
-                                        const id = Number(ev.target.getAttribute('data-element-id'));
-                                        if (!isNaN(id)) {
-                                            updateElement(id, {
-                                                x: translate[0],
-                                                y: translate[1],
-                                                angle: ev.lastEvent.rotate,
-                                            });
-                                        }
-                                    });
-                                }}
+          if (clickedElement) {
+            // Só para o Selecto se clicar em um elemento já selecionado
+            const clickedId = Number(
+              clickedElement.getAttribute("data-element-id"),
+            );
 
-                                onResize={(e) => {
-                                    e.target.style.width = `${e.width}px`;
-                                    e.target.style.height = `${e.height}px`;
-                                    e.target.style.transform = e.drag.transform;
-                                }}
-                                onResizeStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onResizeEnd={(e) => {
-                                    setIsDragging(false);
-                                    if (!e.lastEvent) return;
-                                    const translate = e.lastEvent.drag.translate;
-                                    const id = Number(e.target.getAttribute('data-element-id'));
-                                    if (!isNaN(id) && e.lastEvent.width && e.lastEvent.height) {
-                                        const element = elements.find(el => el.id === id);
-                                        if (element?.isGroup && element.children) {
-                                            // Calcula escala do resize
-                                            const scaleX = e.lastEvent.width / element.w;
-                                            const scaleY = e.lastEvent.height / element.h;
+            if (!isNaN(clickedId) && selectedIds.includes(clickedId)) {
+              console.log("Stopping - click on selected element for drag");
+              e.stop();
+            }
+            // Se clicar em elemento não selecionado, deixa o Selecto selecionar
+          }
+          // Se não clicar em nenhum elemento (.element), deixa fazer seleção de retângulo
+        }}
+        onSelect={(e) => {
+          console.log("Selecto onSelect", e.selected);
+          // Seleciona elementos ao clicar
+          const selected = e.selected
+            .map((el) => Number(el.getAttribute("data-element-id")))
+            .filter((id) => !isNaN(id));
 
-                                            setElements(prev => prev.map(el => {
-                                                if (el.id === id) {
-                                                    return {
-                                                        ...el,
-                                                        x: translate[0],
-                                                        y: translate[1],
-                                                        w: e.lastEvent!.width,
-                                                        h: e.lastEvent!.height,
-                                                    };
-                                                }
-                                                if (element.children?.includes(el.id)) {
-                                                    // Escala e reposiciona filhos
-                                                    const relX = el.x - element.x;
-                                                    const relY = el.y - element.y;
-                                                    return {
-                                                        ...el,
-                                                        x: translate[0] + (relX * scaleX),
-                                                        y: translate[1] + (relY * scaleY),
-                                                        w: el.w * scaleX,
-                                                        h: el.h * scaleY,
-                                                    };
-                                                }
-                                                return el;
-                                            }));
-                                        } else {
-                                            updateElement(id, {
-                                                x: translate[0],
-                                                y: translate[1],
-                                                w: e.lastEvent.width,
-                                                h: e.lastEvent.height,
-                                            });
-                                        }
-                                    }
-                                }}
+          if (selected.length > 0) {
+            selectMultiple(selected);
+          }
+        }}
+        onSelectEnd={(e) => {
+          const { isDragStart, selected, inputEvent } = e;
 
-                                onRotate={(e) => {
-                                    e.target.style.transform = e.drag.transform;
-                                }}
-                                onRotateStart={() => {
-                                    setIsDragging(true);
-                                }}
-                                onRotateEnd={(e) => {
-                                    setIsDragging(false);
-                                    if (!e.lastEvent?.drag.translate) return;
-                                    const translate = e.lastEvent.drag.translate;
-                                    const id = Number(e.target.getAttribute('data-element-id'));
-                                    if (!isNaN(id)) {
-                                        const element = elements.find(el => el.id === id);
-                                        if (element?.isGroup && element.children) {
-                                            // Rotaciona o grupo e seus filhos ao redor do centro do grupo
-                                            const centerX = element.x + element.w / 2;
-                                            const centerY = element.y + element.h / 2;
-                                            const angleDelta = e.lastEvent.rotate - element.angle;
-                                            const rad = (angleDelta * Math.PI) / 180;
+          if (isDragStart) {
+            inputEvent.preventDefault();
+          }
 
-                                            setElements(prev => prev.map(el => {
-                                                if (el.id === id) {
-                                                    return {
-                                                        ...el,
-                                                        x: translate[0],
-                                                        y: translate[1],
-                                                        angle: e.lastEvent!.rotate,
-                                                    };
-                                                }
-                                                if (element.children?.includes(el.id)) {
-                                                    // Rotaciona posição do filho ao redor do centro do grupo
-                                                    const childCenterX = el.x + el.w / 2;
-                                                    const childCenterY = el.y + el.h / 2;
-                                                    const relX = childCenterX - centerX;
-                                                    const relY = childCenterY - centerY;
+          const selectedIds = selected
+            .map((el) => Number(el.getAttribute("data-element-id")))
+            .filter((id) => !isNaN(id));
 
-                                                    const newRelX = relX * Math.cos(rad) - relY * Math.sin(rad);
-                                                    const newRelY = relX * Math.sin(rad) + relY * Math.cos(rad);
+          if (selectedIds.length > 0) {
+            selectMultiple(selectedIds);
 
-                                                    return {
-                                                        ...el,
-                                                        x: centerX + newRelX - el.w / 2,
-                                                        y: centerY + newRelY - el.h / 2,
-                                                        angle: el.angle + angleDelta,
-                                                    };
-                                                }
-                                                return el;
-                                            }));
-                                        } else {
-                                            updateElement(id, {
-                                                x: translate[0],
-                                                y: translate[1],
-                                                angle: e.lastEvent.rotate,
-                                            });
-                                        }
-                                    }
-                                }}
-                            />
-                        )}
-
-                        {/* Selecto para seleção com retângulo */}
-                        <Selecto
-                            container={paperRef.current}
-                            selectableTargets={['.element']}
-                            hitRate={0}
-                            selectByClick={false}
-                            selectFromInside={false}
-                            toggleContinueSelect={['shift']}
-                            continueSelect={false}
-                            ratio={0}
-                            preventClickEventOnDrag={true}
-                            onSelectEnd={(e) => {
-                                if (isDragging) return;
-
-                                const selected = e.selected.map(el =>
-                                    Number(el.getAttribute('data-element-id'))
-                                ).filter(id => !isNaN(id));
-
-                                if (selected.length > 0) {
-                                    setSelectedIds(selected);
-                                }
-                            }}
-                        />
-                    </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="w-48">
-                    <ContextMenuItem onClick={duplicateSelected} disabled={selectedIds.length === 0}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        <span>Duplicar</span>
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={deleteSelected} disabled={selectedIds.length === 0}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Deletar</span>
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem
-                        onClick={groupSelected}
-                        disabled={selectedIds.length < 2 || selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
-                    >
-                        <Group className="mr-2 h-4 w-4" />
-                        <span>Agrupar</span>
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        onClick={ungroupSelected}
-                        disabled={!selectedIds.some(id => elements.find(e => e.id === id)?.isGroup)}
-                    >
-                        <Ungroup className="mr-2 h-4 w-4" />
-                        <span>Desagrupar</span>
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem onClick={bringToFront} disabled={selectedIds.length === 0}>
-                        <BringToFront className="mr-2 h-4 w-4" />
-                        <span>Trazer para frente</span>
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={sendToBack} disabled={selectedIds.length === 0}>
-                        <Send className="mr-2 h-4 w-4" />
-                        <span>Enviar para trás</span>
-                    </ContextMenuItem>
-                </ContextMenuContent>
-            </ContextMenu>
-        </div>
-    );
-}
+            // Se começou a arrastar, aguarda o Moveable atualizar o target e inicia o drag
+            if (isDragStart) {
+              moveableRef.current?.waitToChangeTarget().then(() => {
+                moveableRef.current?.dragStart(inputEvent);
+              });
+            }
+          }
+        }}
+      />
+    </div>
+  );
+};

@@ -1,12 +1,13 @@
-import "./global.css"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router"
-import { AuthProvider, useAuth } from "./contexts/auth-context"
-import { AuthPage } from "./pages/auth"
-import { DashboardLayout } from "./layouts/dashboard-layout"
-import { EditorPage } from "./pages/editor"
+import "./global.css";
+import "@creative-ds/ui/styles.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { AuthProvider, useAuth } from "./contexts/auth-context";
+import { AuthPage } from "./pages/auth";
+
+import { EditorPage } from "./pages/editor";
 
 function AppRoutes() {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -16,7 +17,7 @@ function AppRoutes() {
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -35,7 +36,7 @@ function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/auth" />} />
     </Routes>
-  )
+  );
 }
 
 function App() {
@@ -43,10 +44,9 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
-
       </AuthProvider>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

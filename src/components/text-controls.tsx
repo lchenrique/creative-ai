@@ -1,68 +1,58 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { INITIAL_COLOR_CONFIG, useCreativeStore } from "@/stores/creative-store"
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  INITIAL_COLOR_CONFIG,
+  useCreativeStore,
+} from "@/stores/creative-store";
 import {
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
-  Italic
-} from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { FontCombobox } from "./font-combobox"
-import GradientColorPicker from "./gradient-color-picker"
-import { type ColorConfig } from "./gradient-control"
+  Italic,
+  Droplet,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FontCombobox } from "./font-combobox";
+import GradientColorPicker from "./gradient-color-picker";
+import GradientControl, { type ColorConfig } from "./gradient-control";
 
 export function TextControls() {
-  const selectedText = useCreativeStore((state) => state.selectedText)
-  const updateTextProperty = useCreativeStore((state) => state.updateTextProperty)
+  const updateElementConfig = useCreativeStore(
+    (state) => state.updateSelectedElements,
+  );
+  const selectedIds = useCreativeStore((state) => state.selectedCanvasIds);
+  const element = useCreativeStore((state) =>
+    state.canvasElements.find(
+      (el) => el.id === selectedIds[0] && el.type === "text",
+    ),
+  );
 
-  const [colorConfig, setColorConfig] = useState<ColorConfig>(INITIAL_COLOR_CONFIG)
-  const isUpdatingFromStore = useRef(false)
-
-  // Sincroniza o estado local com o store (quando o texto selecionado muda)
-  useEffect(() => {
-    if (selectedText) {
-      isUpdatingFromStore.current = true
-      setColorConfig(selectedText.fill)
-    }
-  }, [selectedText])
-
-  // Sincroniza o store com o estado local (quando o usuário muda a cor na UI)
-  useEffect(() => {
-    if (isUpdatingFromStore.current) {
-      isUpdatingFromStore.current = false
-      return
-    }
-
-    if (selectedText && JSON.stringify(colorConfig) !== JSON.stringify(selectedText.fill)) {
-      updateTextProperty({ fill: colorConfig })
-    }
-  }, [colorConfig, selectedText, updateTextProperty])
-
-  if (!selectedText) return null
+  if (!element) return null;
 
   const fontWeights = [
-    { value: '300', label: 'Light' },
-    { value: '400', label: 'Normal' },
-    { value: '500', label: 'Medium' },
-    { value: '600', label: 'Semibold' },
-    { value: '700', label: 'Bold' },
-    { value: '800', label: 'Extrabold' },
-  ]
+    { value: "300", label: "Light" },
+    { value: "400", label: "Normal" },
+    { value: "500", label: "Medium" },
+    { value: "600", label: "Semibold" },
+    { value: "700", label: "Bold" },
+    { value: "800", label: "Extrabold" },
+  ];
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Fonte */}
+    <div className="space-y-4  overflow-auto mb-14">
       <div className="space-y-2">
         <Label className="text-sm font-medium">Fonte</Label>
         <FontCombobox
-          value={selectedText.fontFamily}
-          onValueChange={(value) => updateTextProperty({ fontFamily: value })}
+          value={element.fontFamily}
+          onValueChange={(value) => {
+            console.log("Changing font to:", value);
+            updateElementConfig({ fontFamily: value });
+          }}
           className="w-full"
         />
       </div>
@@ -70,10 +60,26 @@ export function TextControls() {
       {/* Cor da Fonte */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Cor da Fonte</Label>
-        <GradientColorPicker
-          colorConfig={colorConfig}
-          setColorConfig={setColorConfig}
-          enableGradient={true}
+        <GradientControl
+          colorConfig={{
+            colorType: "solid",
+            solidColor: element.color,
+            gradient: INITIAL_COLOR_CONFIG.gradient,
+            pattern: null,
+            image: null,
+            video: null,
+          }}
+          setColorConfig={(newConfig) => {
+            if (typeof newConfig === "function") {
+              const updatedConfig = newConfig(
+                element.background || INITIAL_COLOR_CONFIG,
+              );
+              updateElementConfig({ color: updatedConfig.solidColor });
+            } else {
+              updateElementConfig({ color: newConfig.solidColor });
+            }
+          }}
+          enableGradient={false}
           enablePattern={false}
           enableImage={false}
           enableVideo={false}
@@ -84,11 +90,13 @@ export function TextControls() {
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <Label className="text-sm font-medium">Tamanho</Label>
-          <span className="text-sm text-muted-foreground">{selectedText.fontSize}px</span>
+          <span className="text-sm text-muted-foreground">
+            {element.fontSize}px
+          </span>
         </div>
         <Slider
-          value={[selectedText.fontSize]}
-          onValueChange={(value) => updateTextProperty({ fontSize: value[0] })}
+          value={[element.fontSize || 16]}
+          onValueChange={(value) => updateElementConfig({ fontSize: value[0] })}
           min={8}
           max={200}
           step={1}
@@ -103,9 +111,11 @@ export function TextControls() {
           {fontWeights.map((weight) => (
             <Button
               key={weight.value}
-              variant={selectedText.fontWeight === weight.value ? "default" : "outline"}
+              variant={
+                element.fontWeight === weight.value ? "default" : "outline"
+              }
               size="sm"
-              onClick={() => updateTextProperty({ fontWeight: weight.value })}
+              onClick={() => updateElementConfig({ fontWeight: weight.value })}
               className="text-xs"
             >
               {weight.label}
@@ -117,12 +127,18 @@ export function TextControls() {
       {/* Espaçamento entre Letras */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <Label className="text-sm font-medium">Espaçamento entre Letras</Label>
-          <span className="text-sm text-muted-foreground">{selectedText.letterSpacing}px</span>
+          <Label className="text-sm font-medium">
+            Espaçamento entre Letras
+          </Label>
+          <span className="text-sm text-muted-foreground">
+            {element.letterSpacing || 0}px
+          </span>
         </div>
         <Slider
-          value={[selectedText.letterSpacing]}
-          onValueChange={(value) => updateTextProperty({ letterSpacing: value[0] })}
+          value={[element.letterSpacing || 0]}
+          onValueChange={(value) =>
+            updateElementConfig({ letterSpacing: value[0] })
+          }
           min={-50}
           max={100}
           step={1}
@@ -134,11 +150,15 @@ export function TextControls() {
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <Label className="text-sm font-medium">Altura da Linha</Label>
-          <span className="text-sm text-muted-foreground">{selectedText.lineHeight.toFixed(2)}</span>
+          <span className="text-sm text-muted-foreground">
+            {(element.lineHeight || 1.2).toFixed(2)}
+          </span>
         </div>
         <Slider
-          value={[selectedText.lineHeight]}
-          onValueChange={(value) => updateTextProperty({ lineHeight: value[0] })}
+          value={[element.lineHeight || 1.2]}
+          onValueChange={(value) =>
+            updateElementConfig({ lineHeight: value[0] })
+          }
           min={0.5}
           max={3}
           step={0.1}
@@ -151,9 +171,10 @@ export function TextControls() {
         <Label className="text-sm font-medium">Estilo</Label>
         <ToggleGroup
           type="single"
-          value={selectedText.fontStyle}
+          value={element.fontStyle || "normal"}
           onValueChange={(value) => {
-            if (value) updateTextProperty({ fontStyle: value as 'normal' | 'italic' })
+            if (value)
+              updateElementConfig({ fontStyle: value as "normal" | "italic" });
           }}
           className="justify-start"
         >
@@ -172,9 +193,12 @@ export function TextControls() {
         <Label className="text-sm font-medium">Alinhamento</Label>
         <ToggleGroup
           type="single"
-          value={selectedText.textAlign}
+          value={element.textAlign || "left"}
           onValueChange={(value) => {
-            if (value) updateTextProperty({ textAlign: value as 'left' | 'center' | 'right' | 'justify' })
+            if (value)
+              updateElementConfig({
+                textAlign: value as "left" | "center" | "right" | "justify",
+              });
           }}
           className="justify-start"
         >
@@ -192,6 +216,121 @@ export function TextControls() {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
+
+      {/* Sombra */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Droplet className="w-4 h-4" />
+            Sombra
+          </Label>
+          <Button
+            variant={element.shadowEnabled ? "default" : "outline"}
+            size="sm"
+            onClick={() =>
+              updateElementConfig({ shadowEnabled: !element.shadowEnabled })
+            }
+            className="text-xs h-7"
+          >
+            {element.shadowEnabled ? "Ativada" : "Desativada"}
+          </Button>
+        </div>
+
+        {element.shadowEnabled && (
+          <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+            {/* Cor da Sombra */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Cor da Sombra</Label>
+              <GradientControl
+                colorConfig={{
+                  colorType: "solid",
+                  solidColor: element.shadowColor || "rgba(0,0,0,0.5)",
+                  gradient: INITIAL_COLOR_CONFIG.gradient,
+                  pattern: null,
+                  image: null,
+                  video: null,
+                }}
+                setColorConfig={(newConfig) => {
+                  if (typeof newConfig === "function") {
+                    const updatedConfig = newConfig(
+                      element.background || INITIAL_COLOR_CONFIG,
+                    );
+                    updateElementConfig({
+                      shadowColor: updatedConfig.solidColor,
+                    });
+                  } else {
+                    updateElementConfig({ shadowColor: newConfig.solidColor });
+                  }
+                }}
+                enableGradient={false}
+                enablePattern={false}
+                enableImage={false}
+                enableVideo={false}
+              />
+            </div>
+
+            {/* Deslocamento X */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-medium">Deslocamento X</Label>
+                <span className="text-xs text-muted-foreground">
+                  {element.shadowX || 0}px
+                </span>
+              </div>
+              <Slider
+                value={[element.shadowX || 0]}
+                onValueChange={(value) =>
+                  updateElementConfig({ shadowX: value[0] })
+                }
+                min={-50}
+                max={50}
+                step={1}
+                className="w-full"
+              />
+            </div>
+
+            {/* Deslocamento Y */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-medium">Deslocamento Y</Label>
+                <span className="text-xs text-muted-foreground">
+                  {element.shadowY || 0}px
+                </span>
+              </div>
+              <Slider
+                value={[element.shadowY || 0]}
+                onValueChange={(value) =>
+                  updateElementConfig({ shadowY: value[0] })
+                }
+                min={-50}
+                max={50}
+                step={1}
+                className="w-full"
+              />
+            </div>
+
+            {/* Desfoque */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-medium">Desfoque</Label>
+                <span className="text-xs text-muted-foreground">
+                  {element.shadowBlur || 0}px
+                </span>
+              </div>
+              <Slider
+                value={[element.shadowBlur || 0]}
+                onValueChange={(value) =>
+                  updateElementConfig({ shadowBlur: value[0] })
+                }
+                min={0}
+                max={50}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

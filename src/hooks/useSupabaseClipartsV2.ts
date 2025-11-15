@@ -1,181 +1,183 @@
-import { supabase } from '@/lib/supabase'
-import { useEffect, useState } from 'react'
+import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
 
 interface SupabaseClipart {
-    id: string
-    name: string
-    category: string
-    path: string
-    url: string
-    keywords?: string[]
-    created_at: string
+  id: string;
+  name: string;
+  category: string;
+  path: string;
+  url: string;
+  keywords?: string[];
+  created_at: string;
 }
 
 interface UseSupabaseClipartsV2Props {
-    search?: string
-    category?: string
-    page?: number
-    pageSize?: number
+  search?: string;
+  category?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 interface UseSupabaseClipartsV2Return {
-    cliparts: SupabaseClipart[]
-    loading: boolean
-    error: string | null
-    categories: string[]
-    total: number
-    hasMore: boolean
+  cliparts: SupabaseClipart[];
+  loading: boolean;
+  error: string | null;
+  categories: string[];
+  total: number;
+  hasMore: boolean;
 }
 
 export function useSupabaseClipartsV2({
-    search = '',
-    category = '',
-    page = 1,
-    pageSize = 50,
+  search = "",
+  category = "",
+  page = 1,
+  pageSize = 50,
 }: UseSupabaseClipartsV2Props = {}): UseSupabaseClipartsV2Return {
-    const [cliparts, setCliparts] = useState<SupabaseClipart[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [categories, setCategories] = useState<string[]>([])
-    const [total, setTotal] = useState(0)
-    const [allFetchedData, setAllFetchedData] = useState<SupabaseClipart[]>([]) // Armazena todos os dados quando há busca
+  const [cliparts, setCliparts] = useState<SupabaseClipart[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [total, setTotal] = useState(0);
+  const [allFetchedData, setAllFetchedData] = useState<SupabaseClipart[]>([]); // Armazena todos os dados quando há busca
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            // Usar abordagem diferente: buscar alguns de cada categoria conhecida
-            const knownCategories = ['magicons', 'open_stickers']
-            const foundCategories: string[] = []
+  useEffect(() => {
+    const fetchCategories = async () => {
+      // Usar abordagem diferente: buscar alguns de cada categoria conhecida
+      const knownCategories = ["magicons", "open_stickers"];
+      const foundCategories: string[] = [];
 
-            for (const cat of knownCategories) {
-                const { data, error } = await (supabase as any)
-                    .from('cliparts')
-                    .select('category')
-                    .eq('category', cat)
-                    .limit(1)
+      for (const cat of knownCategories) {
+        const { data, error } = await (supabase as any)
+          .from("cliparts")
+          .select("category")
+          .eq("category", cat)
+          .limit(1);
 
-                if (data && data.length > 0 && !error) {
-                    foundCategories.push(cat)
-                }
-            }
-
-            setCategories(foundCategories.sort())
+        if (data && data.length > 0 && !error) {
+          foundCategories.push(cat);
         }
+      }
 
-        fetchCategories()
-    }, [])
+      setCategories(foundCategories.sort());
+    };
 
-    // Reset ao mudar busca ou categoria
-    useEffect(() => {
-        setCliparts([])
-        setAllFetchedData([])
-    }, [search, category])
+    fetchCategories();
+  }, []);
 
-    useEffect(() => {
-        const fetchCliparts = async () => {
-            setLoading(true)
-            setError(null)
+  // Reset ao mudar busca ou categoria
+  useEffect(() => {
+    setCliparts([]);
+    setAllFetchedData([]);
+  }, [search, category]);
 
-            try {
-                // Se houver busca, vamos pegar TODAS as keywords primeiro (sem paginação)
-                // e filtrar no cliente. Se não houver busca, usa paginação normal do servidor
-                if (search) {
-                    // Se já temos os dados filtrados, apenas paginar no cliente
-                    if (allFetchedData.length > 0) {
-                        const from = (page - 1) * pageSize
-                        const to = from + pageSize
-                        const paginated = allFetchedData.slice(0, to) // Acumular até a página atual
+  useEffect(() => {
+    const fetchCliparts = async () => {
+      setLoading(true);
+      setError(null);
 
-                        setCliparts(paginated)
-                        setLoading(false)
-                        return
-                    }
+      try {
+        // Se houver busca, vamos pegar TODAS as keywords primeiro (sem paginação)
+        // e filtrar no cliente. Se não houver busca, usa paginação normal do servidor
+        if (search) {
+          // Se já temos os dados filtrados, apenas paginar no cliente
+          if (allFetchedData.length > 0) {
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize;
+            const paginated = allFetchedData.slice(from, to); // Paginação real
 
-                    // Primeira busca - buscar todos os dados (SEM LIMITE!)
-                    let query = (supabase as any)
-                        .from('cliparts')
-                        .select('*', { count: 'exact' })
-                        .limit(10000) // Aumentar limite para pegar todos os cliparts
+            setCliparts(paginated);
+            setLoading(false);
+            return;
+          }
 
-                    // Filtrar por categoria
-                    if (category) {
-                        query = query.eq('category', category)
-                    }
+          // Primeira busca - buscar todos os dados (SEM LIMITE!)
+          let query = (supabase as any)
+            .from("cliparts")
+            .select("*", { count: "exact" })
+            .limit(10000); // Aumentar limite para pegar todos os cliparts
 
-                    const { data, error: fetchError } = await query
+          // Filtrar por categoria
+          if (category) {
+            query = query.eq("category", category);
+          }
 
-                    if (fetchError) {
-                        throw fetchError
-                    }
+          const { data, error: fetchError } = await query;
 
-                    // Filtrar no cliente por nome, path OU keywords
-                    const searchLower = search.toLowerCase()
-                    const filtered = (data || []).filter((item: SupabaseClipart) => {
-                        const nameMatch = item.name.toLowerCase().includes(searchLower)
-                        const pathMatch = item.path.toLowerCase().includes(searchLower)
-                        const keywordMatch = item.keywords?.some(kw => kw.toLowerCase().includes(searchLower))
+          if (fetchError) {
+            throw fetchError;
+          }
 
-                        return nameMatch || pathMatch || keywordMatch
-                    })
+          // Filtrar no cliente por nome, path OU keywords
+          const searchLower = search.toLowerCase();
+          const filtered = (data || []).filter((item: SupabaseClipart) => {
+            const nameMatch = item.name.toLowerCase().includes(searchLower);
+            const pathMatch = item.path.toLowerCase().includes(searchLower);
+            const keywordMatch = item.keywords?.some((kw) =>
+              kw.toLowerCase().includes(searchLower),
+            );
 
-                    setAllFetchedData(filtered)
-                    setTotal(filtered.length)
+            return nameMatch || pathMatch || keywordMatch;
+          });
 
-                    // Aplicar paginação no cliente
-                    const from = (page - 1) * pageSize
-                    const to = from + pageSize
-                    const paginated = filtered.slice(0, to) // Acumular desde o início
+          setAllFetchedData(filtered);
+          setTotal(filtered.length);
 
-                    setCliparts(paginated)
-                } else {
-                    // Sem busca - usa paginação acumulativa do servidor
-                    let query = (supabase as any)
-                        .from('cliparts')
-                        .select('*', { count: 'exact' })
+          // Aplicar paginação no cliente
+          const from = (page - 1) * pageSize;
+          const to = from + pageSize;
+          const paginated = filtered.slice(from, to); // Paginação real
 
-                    // Filtrar por categoria
-                    if (category) {
-                        query = query.eq('category', category)
-                    }
+          setCliparts(paginated);
+        } else {
+          // Sem busca - usa paginação real do servidor
+          let query = (supabase as any)
+            .from("cliparts")
+            .select("*", { count: "exact" });
 
-                    // Ordenar e paginar - buscar desde o início até a página atual
-                    const from = 0
-                    const to = page * pageSize - 1
+          // Filtrar por categoria
+          if (category) {
+            query = query.eq("category", category);
+          }
 
-                    query = query
-                        .order('category', { ascending: true })
-                        .order('name', { ascending: true })
-                        .range(from, to)
+          // Ordenar e paginar - buscar apenas a página atual
+          const from = (page - 1) * pageSize;
+          const to = from + pageSize - 1;
 
-                    const { data, error: fetchError, count } = await query
+          query = query
+            .order("category", { ascending: true })
+            .order("name", { ascending: true })
+            .range(from, to);
 
-                    if (fetchError) {
-                        throw fetchError
-                    }
+          const { data, error: fetchError, count } = await query;
 
-                    setCliparts(data || [])
-                    setTotal(count || 0)
-                }
-            } catch (err) {
-                console.error('Erro ao buscar cliparts:', err)
-                setError(err instanceof Error ? err.message : 'Erro desconhecido')
-                setCliparts([])
-                setTotal(0)
-            } finally {
-                setLoading(false)
-            }
+          if (fetchError) {
+            throw fetchError;
+          }
+
+          setCliparts(data || []);
+          setTotal(count || 0);
         }
+      } catch (err) {
+        console.error("Erro ao buscar cliparts:", err);
+        setError(err instanceof Error ? err.message : "Erro desconhecido");
+        setCliparts([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        fetchCliparts()
-    }, [search, category, page, pageSize, allFetchedData.length])
+    fetchCliparts();
+  }, [search, category, page, pageSize, allFetchedData.length]);
 
-    const hasMore = total > page * pageSize
+  const hasMore = total > page * pageSize;
 
-    return {
-        cliparts,
-        loading,
-        error,
-        categories,
-        total,
-        hasMore,
-    }
+  return {
+    cliparts,
+    loading,
+    error,
+    categories,
+    total,
+    hasMore,
+  };
 }

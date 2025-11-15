@@ -1,36 +1,34 @@
-import { ArtPreview } from "@/components/art-preview"
-import { ChatSidebar } from "@/components/chat-sidebar"
-import { FloatingMenus } from "@/components/floating-menu/floating-menus"
-import { PageHeader } from "@/components/layout/page-header"
-import { Button } from "@/components/ui/button"
-import { Download, Upload } from "lucide-react"
-import { useCreativeStore } from "@/stores/creative-store"
-import { useState, useRef } from "react"
-import { ClipGroupManager } from "@/components/clip-group-manager"
+import { ChatSidebar } from "@/components/chat-sidebar";
+import { FloatingMenus } from "@/components/floating-menu/floating-menus";
+import { PageHeader } from "@/components/layout/page-header";
+import { useState, useRef } from "react";
+import { ClipGroupManager } from "@/components/clip-group-manager";
+import { CanvasEditorTesting } from "@/components/canvas-editor-testing";
+import { Button } from "@creative-ds/ui";
 
 export type ArtConfig = {
-  theme: "modern" | "minimal" | "bold" | "elegant"
-  backgroundColor: string
-  textColor: string
+  theme: "modern" | "minimal" | "bold" | "elegant";
+  backgroundColor: string;
+  textColor: string;
   gradient: {
-    enabled: boolean
-    from: string
-    to: string
-    direction: "to-r" | "to-br" | "to-b" | "to-bl"
-  }
-  pattern: "none" | "dots" | "grid" | "waves"
+    enabled: boolean;
+    from: string;
+    to: string;
+    direction: "to-r" | "to-br" | "to-b" | "to-bl";
+  };
+  pattern: "none" | "dots" | "grid" | "waves";
   font: {
-    family: "sans" | "serif" | "mono"
-    size: "sm" | "md" | "lg" | "xl"
-    weight: "normal" | "medium" | "semibold" | "bold"
-  }
+    family: "sans" | "serif" | "mono";
+    size: "sm" | "md" | "lg" | "xl";
+    weight: "normal" | "medium" | "semibold" | "bold";
+  };
   content: {
-    title: string
-    subtitle: string
-    description: string
-  }
-  backgroundImage?: string
-}
+    title: string;
+    subtitle: string;
+    description: string;
+  };
+  backgroundImage?: string;
+};
 
 export function EditorPage() {
   const [artConfig, setArtConfig] = useState<ArtConfig>({
@@ -54,48 +52,46 @@ export function EditorPage() {
       subtitle: "Até 70% OFF",
       description: "Aproveite as melhores ofertas do ano!",
     },
-  })
+  });
 
-  const downloadDesign = useCreativeStore((state) => state.downloadDesign)
-  const importCanvasJSON = useCreativeStore((state) => state.importCanvasJSON)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDownload = () => {
-    if (downloadDesign) {
-      downloadDesign()
-    } else {
-      console.error('❌ Função de download não disponível ainda')
-    }
-  }
+  // const handleDownload = () => {
+  //   if (downloadDesign) {
+  //     downloadDesign()
+  //   } else {
+  //     console.error('❌ Função de download não disponível ainda')
+  //   }
+  // }
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
-  }
+  // const handleImportClick = () => {
+  //   fileInputRef.current?.click()
+  // }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
+    const reader = new FileReader();
+    reader.onload = () => {
       try {
-        const jsonData = JSON.parse(event.target?.result as string)
-        if (importCanvasJSON) {
-          importCanvasJSON(jsonData)
-          console.log('✅ Design importado com sucesso!')
-        }
+        // const jsonData = JSON.parse(event.target?.result as string)
+        // if (importCanvasJSON) {
+        //   importCanvasJSON(jsonData)
+        //   console.log('✅ Design importado com sucesso!')
+        // }
       } catch (error) {
-        console.error('❌ Erro ao importar design:', error)
+        console.error("❌ Erro ao importar design:", error);
       }
-    }
-    reader.readAsText(file)
+    };
+    reader.readAsText(file);
 
     // Reset input para permitir importar o mesmo arquivo novamente
-    e.target.value = ''
-  }
+    e.target.value = "";
+  };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="flex flex-col bg-background">
       {/* Header */}
       <PageHeader title="Editor">
         <div className="flex gap-2">
@@ -106,29 +102,30 @@ export function EditorPage() {
             onChange={handleFileChange}
             className="hidden"
           />
-          <Button onClick={handleImportClick} variant="outline" disabled={!importCanvasJSON}>
-            <Upload className="w-4 h-4 mr-2" />
-            Importar Design
-          </Button>
-          <Button onClick={handleDownload} disabled={!downloadDesign}>
-            <Download className="w-4 h-4 mr-2" />
-            Salvar Design
-          </Button>
+          {/* <Button onClick={handleImportClick} variant="outline" disabled={!importCanvasJSON}>
+              <Upload className="w-4 h-4 mr-2" />
+              Importar Design
+            </Button> */}
+          {/* <Button onClick={handleDownload} disabled={!downloadDesign}>
+              <Download className="w-4 h-4 mr-2" />
+              Salvar Design
+            </Button> */}
         </div>
       </PageHeader>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex">
         {/* Chat Sidebar */}
         <ChatSidebar artConfig={artConfig} setArtConfig={setArtConfig} />
 
         {/* Preview Area */}
-        <div className="flex-1 relative bg-muted/30">
-          <ClipGroupManager />
-          <ArtPreview />
+        <div className="flex-1 relative ">
+          {/*<ClipGroupManager />*/}
+          {/*<Canvas />*/}
+          <CanvasEditorTesting />
           <FloatingMenus />
         </div>
       </div>
     </div>
-  )
+  );
 }
