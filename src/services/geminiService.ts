@@ -1,5 +1,5 @@
-import { GoogleGenAI } from '@google/genai'
 import { FabricTemplate, TemplateModificationResult } from '@/types/templates'
+import { GoogleGenAI } from '@google/genai'
 
 /**
  * Serviço para integração com Google Gemini AI
@@ -45,7 +45,6 @@ export class GeminiService {
 
       return result
     } catch (error) {
-      console.error('Erro ao chamar Gemini API:', error)
       throw new Error(`Falha ao modificar template: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
@@ -105,7 +104,6 @@ ${JSON.stringify(templateJson, null, 2)}
         imageKeywords: imageKeywords.length > 0 ? imageKeywords : ['abstract', 'design'],
       }
     } catch (error) {
-      console.error('Erro ao fazer parse da resposta:', error)
       console.error('Resposta original:', responseText)
       throw new Error('Falha ao processar resposta do Gemini. Resposta inválida.')
     }

@@ -12,6 +12,7 @@ import {
   Upload,
   Trash,
   FileImage,
+  Layers,
 } from "lucide-react";
 import { Button } from "@creative-ds/ui";
 import GradientControl from "../gradient-control";
@@ -23,6 +24,7 @@ import {
 import { TextControls } from "../text-controls";
 import { ShapeControls } from "../shape-controls";
 import { ImageGallery } from "../image-gallery";
+import { LayersControl } from "../layers/layers-control";
 
 // Re-export for backward compatibility
 
@@ -60,8 +62,6 @@ export function FloatingMenus() {
       .canvasElements.find((el) => el.id === id);
     return element?.type && element.type !== "text";
   });
-
-  console.log("hasSelectedText", hasSelectedText);
   console.log("hasSelectedShapes", hasSelectedShapes);
 
   const handleImportCanvas = () => {
@@ -79,7 +79,7 @@ export function FloatingMenus() {
       } catch (error) {
         alert(
           "Erro ao carregar canvas: " +
-            (error instanceof Error ? error.message : "Erro desconhecido"),
+          (error instanceof Error ? error.message : "Erro desconhecido"),
         );
       }
     };
@@ -93,7 +93,7 @@ export function FloatingMenus() {
   };
 
   return (
-    <div className="absolute top-1/2 right-1/2 translate-x-[350px] -translate-y-1/2 flex flex-col gap-3 z-50 ">
+    <div className="absolute top-1/2 right-1/2 translate-x-[350px] p-1 bg-background -translate-y-1/2 flex flex-col gap-3 z-999999 ">
       <FloatingMenuItem
         contentTitle="Fundo"
         trigger={<Palette />}
@@ -101,7 +101,11 @@ export function FloatingMenus() {
           <GradientControl
             setColorConfig={(newConfig) => {
               if (typeof newConfig === "function") {
-                const updatedConfig = newConfig(background);
+                // Pegar o valor mais recente do background do store
+                const latestBackground = useCreativeStore.getState().background;
+                const updatedConfig = newConfig(
+                  latestBackground || INITIAL_COLOR_CONFIG,
+                );
                 updateBackground(updatedConfig);
               } else {
                 updateBackground(newConfig);
@@ -173,6 +177,12 @@ export function FloatingMenus() {
         contentTitle="Controles de Elemento"
         trigger={<Shapes />}
         menuContent={<ShapeControls />}
+      />
+
+      <FloatingMenuItem
+        contentTitle="Camadas"
+        trigger={<Layers />}
+        menuContent={<LayersControl />}
       />
 
       <FloatingMenuItem

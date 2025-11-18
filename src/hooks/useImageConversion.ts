@@ -1,5 +1,5 @@
 import { useCreativeStore } from "@/stores/creative-store";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 export const useImageConversion = () => {
   const [isConverting, setIsConverting] = useState(false);
@@ -11,7 +11,6 @@ export const useImageConversion = () => {
     try {
       await useCreativeStore.getState().convertImageToSVG(elementId);
     } catch (error) {
-      console.error("Erro ao converter imagem para SVG:", error);
       throw error;
     } finally {
       setIsConverting(false);
@@ -60,7 +59,6 @@ export const useImageConversion = () => {
           svgColors: undefined,
         });
       } catch (error) {
-        console.error("Erro ao converter para WebP:", error);
         throw error;
       } finally {
         setIsConvertingWebP(false);
@@ -74,7 +72,6 @@ export const useImageConversion = () => {
     try {
       await useCreativeStore.getState().removeBackground(elementId);
     } catch (error) {
-      console.error("Erro ao remover fundo:", error);
       throw error;
     } finally {
       setIsRemovingBackground(false);

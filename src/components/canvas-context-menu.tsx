@@ -136,7 +136,6 @@ export function CanvasContextMenu({ children }: CanvasContextMenuProps) {
       fabricCanvas.setActiveObject(cloned);
       fabricCanvas.renderAll();
     } catch (error) {
-      console.error("Erro ao duplicar objeto:", error);
     }
   };
 

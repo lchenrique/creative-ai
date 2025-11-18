@@ -69,7 +69,6 @@ export function useFreeSVG({ query = '', page = 1, perPage = 25 }: UseFreeSVGPro
                 setTotalPages(data.last_page || 1)
                 setHasMore(data.current_page < data.last_page)
             } catch (err) {
-                console.error('Erro ao buscar imagens do FreeSVG:', err)
                 setError(err instanceof Error ? err.message : 'Erro desconhecido')
                 setImages([])
             } finally {

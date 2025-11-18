@@ -9,7 +9,6 @@ const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
 const supabaseKey = supabaseServiceKey || supabaseAnonKey
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ Supabase credentials not found. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_SERVICE_ROLE_KEY) in your .env file')
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {

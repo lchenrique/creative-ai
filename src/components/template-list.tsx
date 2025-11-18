@@ -52,7 +52,6 @@ export function TemplateList({ onLoadTemplate }: TemplateListProps) {
     if (templateToDelete) {
       const success = deleteTemplate(templateToDelete)
       if (success) {
-        console.log('Template deletado com sucesso')
       }
     }
     setDeleteDialogOpen(false)
@@ -62,7 +61,6 @@ export function TemplateList({ onLoadTemplate }: TemplateListProps) {
   const handleDuplicate = (id: string) => {
     const duplicated = duplicateTemplate(id)
     if (duplicated) {
-      console.log('Template duplicado:', duplicated.name)
     }
   }
 
@@ -90,7 +88,6 @@ export function TemplateList({ onLoadTemplate }: TemplateListProps) {
         const text = await file.text()
         const imported = importTemplate(text)
         if (imported) {
-          console.log('Template importado:', imported.name)
         } else {
           alert('Erro ao importar template. Verifique o arquivo JSON.')
         }

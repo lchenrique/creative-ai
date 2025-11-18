@@ -3,6 +3,7 @@
 import {
   INITIAL_COLOR_CONFIG,
   useCreativeStore,
+  type BlendMode,
 } from "@/stores/creative-store";
 import {
   PanelsRightBottom as AlignBottom,
@@ -17,6 +18,8 @@ import {
   RotateCw,
   Palette,
   Droplet,
+  Circle,
+  Layers,
 } from "lucide-react";
 import GradientControl from "./gradient-control";
 import { Button } from "./ui/button";
@@ -24,35 +27,11 @@ import { Input } from "./ui/input";
 import { Slider } from "./ui/slider";
 import { replaceColorInSVG } from "@/lib/svg-color-utils";
 import { ColorPicker } from "./color-picker";
+import { useCanvasStore } from "@/stores/canva-store";
 
 export const ShapeControls = () => {
-  const updateElementConfig = useCreativeStore(
-    (state) => state.updateSelectedElements,
-  );
-  const updateElement = useCreativeStore((state) => state.updateElement);
-  const selectedIds = useCreativeStore((state) => state.selectedCanvasIds);
-  const element = useCreativeStore((state) =>
-    state.canvasElements.find((el) => el.id === selectedIds[0]),
-  );
-
-  if (!element) return null;
-
-  const isSVGClipart = element.type === "svg-clipart" && element.svgContent;
-
-  const handleSVGColorChange = (oldColor: string, newColor: string) => {
-    if (!element.svgContent) return;
-
-    const updatedSvg = replaceColorInSVG(
-      element.svgContent,
-      oldColor,
-      newColor,
-    );
-    updateElement(element.id, {
-      svgContent: updatedSvg,
-      svgColors: element.svgColors?.map((c) => (c === oldColor ? newColor : c)),
-    });
-  };
-
+  const selecteds = useCanvasStore((state) => state.selected);
+  const updateElementConfig = useCanvasStore((state) => state.updateElementConfig);
   return (
     <div
       data-slot="floating-menu-content"
@@ -64,22 +43,30 @@ export const ShapeControls = () => {
         <div className="flex flex-col gap-2">
           <GradientControl
             label="Cor de Fundo"
-            colorConfig={element.background || INITIAL_COLOR_CONFIG}
-            setColorConfig={(newConfig) => {
-              if (typeof newConfig === "function") {
-                const updatedConfig = newConfig(
-                  element.background || INITIAL_COLOR_CONFIG,
-                );
-                updateElementConfig({ background: updatedConfig });
-              } else {
-                updateElementConfig({ background: newConfig });
-              }
+            colorConfig={selecteds[0]?.config.style.backgroundColor || {
+              type: "solid",
+              value: "#FFFFFF",
+            }}
+            setColorConfig={(type, value) => {
+              selecteds.forEach((el) => {
+
+
+                updateElementConfig?.((el?.id || "") as string, {
+                  style: {
+                    backgroundColor: {
+                      type,
+                      value,
+                    },
+                  },
+                })
+              });
+
             }}
           />
         </div>
 
         {/* SEÇÃO: CORES DO SVG (se for clipart) */}
-        {isSVGClipart && element.svgColors && element.svgColors.length > 0 && (
+        {/* {isSVGClipart && element.svgColors && element.svgColors.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Palette className="w-4 h-4" />
@@ -117,10 +104,10 @@ export const ShapeControls = () => {
               💡 Edite as cores do seu clipart SVG facilmente
             </p>
           </div>
-        )}
+        )} */}
 
         {/* SEÇÃO: DIMENSÕES */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-4 h-4 flex items-center justify-center text-xs bg-slate-200 dark:bg-slate-800 rounded">
               ↔
@@ -128,7 +115,6 @@ export const ShapeControls = () => {
             Size
           </h3>
           <div className="space-y-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
-            {/* Largura */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -159,7 +145,6 @@ export const ShapeControls = () => {
               </div>
             </div>
 
-            {/* Altura */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -190,10 +175,10 @@ export const ShapeControls = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* SEÇÃO: ROTAÇÃO E TRANSFORMAÇÃO */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-4 h-4 flex items-center justify-center">⟲</span>
             Transform
@@ -253,10 +238,108 @@ export const ShapeControls = () => {
               </Button>
             </div>
           </div>
-        </div>
+        </div> */}
+
+        {/* SEÇÃO: OPACIDADE */}
+        {/* <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <span className="w-4 h-4 flex items-center justify-center">◐</span>
+            Opacity
+          </h3>
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Opacity
+              </label>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                {Math.round((element.opacity ?? 1) * 100)}%
+              </span>
+            </div>
+            <Slider
+              value={[(element.opacity ?? 1) * 100]}
+              onValueChange={(value) =>
+                updateElementConfig({ opacity: value[0] / 100 })
+              }
+              min={0}
+              max={100}
+              step={1}
+              className="w-full"
+            />
+          </div>
+        </div> */}
+
+        {/* SEÇÃO: ARREDONDAMENTO */}
+        {/* <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Circle className="w-4 h-4" />
+            Arredondamento
+          </h3>
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Border Radius
+              </label>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                {element.borderRadius || 0}px
+              </span>
+            </div>
+            <Slider
+              value={[element.borderRadius || 0]}
+              onValueChange={(value) =>
+                updateElementConfig({ borderRadius: value[0] })
+              }
+              min={0}
+              max={Math.min(element.w, element.h) / 2}
+              step={1}
+              className="w-full"
+            />
+          </div>
+        </div> */}
+
+        {/* SEÇÃO: BLEND MODE */}
+        {/* <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            Blend Mode
+          </h3>
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                Modo de Mistura
+              </label>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                {element.blendMode || "normal"}
+              </span>
+            </div>
+            <select
+              value={element.blendMode || "normal"}
+              onChange={(e) =>
+                updateElementConfig({ blendMode: e.target.value as BlendMode })
+              }
+              className="w-full h-9 px-3 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="normal">Normal</option>
+              <option value="multiply">Multiply</option>
+              <option value="screen">Screen</option>
+              <option value="overlay">Overlay</option>
+              <option value="darken">Darken</option>
+              <option value="lighten">Lighten</option>
+              <option value="color-dodge">Color Dodge</option>
+              <option value="color-burn">Color Burn</option>
+              <option value="hard-light">Hard Light</option>
+              <option value="soft-light">Soft Light</option>
+              <option value="difference">Difference</option>
+              <option value="exclusion">Exclusion</option>
+              <option value="hue">Hue</option>
+              <option value="saturation">Saturation</option>
+              <option value="color">Color</option>
+              <option value="luminosity">Luminosity</option>
+            </select>
+          </div>
+        </div> */}
 
         {/* SEÇÃO: SOMBRA */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Droplet className="w-4 h-4" />
@@ -276,7 +359,6 @@ export const ShapeControls = () => {
 
           {element.shadowEnabled && (
             <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
-              {/* Cor da Sombra */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
                   Cor da Sombra
@@ -311,7 +393,6 @@ export const ShapeControls = () => {
                 />
               </div>
 
-              {/* Deslocamento X */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -332,7 +413,6 @@ export const ShapeControls = () => {
                 />
               </div>
 
-              {/* Deslocamento Y */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -353,7 +433,6 @@ export const ShapeControls = () => {
                 />
               </div>
 
-              {/* Desfoque */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -375,10 +454,10 @@ export const ShapeControls = () => {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* SEÇÃO: ALINHAMENTO */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-4 h-4 flex items-center justify-center text-xs">
               ⊞
@@ -439,11 +518,11 @@ export const ShapeControls = () => {
               </Button>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Footer Actions */}
-      <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex gap-2">
+      {/* <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex gap-2">
         <Button
           variant="outline"
           className="flex-1 text-slate-700 dark:text-slate-300 bg-transparent"
@@ -455,7 +534,7 @@ export const ShapeControls = () => {
           <Plus className="w-4 h-4 mr-1" />
           Duplicate
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -1,0 +1,1 @@
+export { ClipPathEditor } from "./ClipPathEditor";

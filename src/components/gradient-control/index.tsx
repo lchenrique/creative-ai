@@ -3,13 +3,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type React from "react";
+import type { ColorConfig } from "@/stores/canva-store";
+import { useDraggable } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
+import { GradientPreview } from "../@new/canvas/gradient-preview";
 import { GradientTab } from "./gradient-tab";
-import { ImageTab } from "./image-tab";
-import { PatternTab } from "./pattern-tab";
 import { SolidColorTab } from "./solid-color-tab";
-import VideoTab from "./video-tab";
 
 export interface ColorStop {
   id: string;
@@ -23,33 +22,28 @@ export interface GradientConfig {
   angle: number;
   radialType: "circle" | "ellipse";
   radialSize:
-    | "closest-side"
-    | "closest-corner"
-    | "farthest-side"
-    | "farthest-corner";
+  | "closest-side"
+  | "closest-corner"
+  | "farthest-side"
+  | "farthest-corner";
   radialPosition: { x: number; y: number };
   stops: ColorStop[];
   linearStart?: { x: number; y: number };
   linearEnd?: { x: number; y: number };
-}
-export interface ColorConfig {
-  colorType: "solid" | "gradient" | "pattern" | "image" | "video";
-  solidColor: string;
-  gradient: GradientConfig;
-  pattern: string | null;
-  image: string | null;
-  video: string | null;
+  radialStart?: { x: number; y: number };
+  radialEnd?: { x: number; y: number };
 }
 
 interface GradientControlProps {
   colorConfig: ColorConfig;
-  setColorConfig: React.Dispatch<React.SetStateAction<ColorConfig>>;
+  setColorConfig: (type: "solid" | "gradient", value: string) => void;
   enableGradient?: boolean;
   enablePattern?: boolean;
   enableImage?: boolean;
   enableVideo?: boolean;
   label?: string;
 }
+
 
 export default function GradientControl({
   colorConfig,
@@ -62,24 +56,24 @@ export default function GradientControl({
   const [tabSelected, setTabSelected] = useState("solid");
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (!enableGradient && colorConfig.colorType === "gradient") {
-      setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
-    }
-  }, [enableGradient, colorConfig.colorType, setColorConfig]);
+  // useEffect(() => {
+  //   if (!enableGradient && colorConfig.colorType === "gradient") {
+  //     setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
+  //   }
+  // }, [enableGradient, colorConfig.colorType, setColorConfig]);
 
-  useEffect(() => {
-    if (!enablePattern && colorConfig.colorType === "pattern") {
-      setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
-    }
-  }, [enablePattern, colorConfig.colorType, setColorConfig]);
+  // useEffect(() => {
+  //   if (!enablePattern && colorConfig.colorType === "pattern") {
+  //     setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
+  //   }
+  // }, [enablePattern, colorConfig.colorType, setColorConfig]);
 
-  // Muda automaticamente para "solid" quando imagem é desabilitada
-  useEffect(() => {
-    if (!enableImage && colorConfig.colorType === "image") {
-      setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
-    }
-  }, [enableImage, colorConfig.colorType, setColorConfig]);
+  // // Muda automaticamente para "solid" quando imagem é desabilitada
+  // useEffect(() => {
+  //   if (!enableImage && colorConfig.colorType === "image") {
+  //     setColorConfig((prev) => ({ ...prev, colorType: "solid" }));
+  //   }
+  // }, [enableImage, colorConfig.colorType, setColorConfig]);
 
   // Reset copy feedback
   useEffect(() => {
@@ -105,6 +99,7 @@ export default function GradientControl({
     { value: "video", label: "Vídeo" },
   ];
 
+
   return (
     <TooltipProvider>
       <Card
@@ -119,16 +114,8 @@ export default function GradientControl({
           <Tabs
             value={tabSelected}
             onValueChange={(value) => {
-              setColorConfig((prev) => ({
-                ...prev,
-                colorType: value as
-                  | "solid"
-                  | "gradient"
-                  | "pattern"
-                  | "image"
-                  | "video",
-              }));
               setTabSelected(value);
+
             }}
             className="w-full"
           >
@@ -150,15 +137,17 @@ export default function GradientControl({
 
             <SolidColorTab
               colorConfig={colorConfig}
-              setColorConfig={setColorConfig}
+              setColorConfig={(value) => setColorConfig("solid", value)}
             />
-            {enableGradient && (
-              <GradientTab
-                colorConfig={colorConfig}
-                setColorConfig={setColorConfig}
-              />
-            )}
-            {enablePattern && (
+
+            <GradientTab
+              value={colorConfig.value}
+              onChange={(value) => {
+                setColorConfig("gradient", value);
+              }}
+            />
+
+            {/* {enablePattern && (
               <PatternTab
                 colorConfig={colorConfig}
                 setColorConfig={setColorConfig}
@@ -175,7 +164,7 @@ export default function GradientControl({
                 colorConfig={colorConfig}
                 setColorConfig={setColorConfig}
               />
-            )}
+            )} */}
           </Tabs>
         </CardContent>
       </Card>

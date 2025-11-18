@@ -2,9 +2,13 @@ import { ChatSidebar } from "@/components/chat-sidebar";
 import { FloatingMenus } from "@/components/floating-menu/floating-menus";
 import { PageHeader } from "@/components/layout/page-header";
 import { useState, useRef } from "react";
-import { ClipGroupManager } from "@/components/clip-group-manager";
 import { CanvasEditorTesting } from "@/components/canvas-editor-testing";
-import { Button } from "@creative-ds/ui";
+import PaperJsEditor from "@/components/react_svg_manipulate_example";
+import MaskEditor from "@/components/react_svg_manipulate_example";
+import MoveableMask from "@/components/react_svg_manipulate_example";
+import MoveableSvgMask from "@/components/react_svg_manipulate_example";
+import Canvas from "@/components/@new/canvas";
+import { Menu } from "@/components/@new/canvas/elements";
 
 export type ArtConfig = {
   theme: "modern" | "minimal" | "bold" | "elegant";
@@ -81,7 +85,6 @@ export function EditorPage() {
         //   console.log('✅ Design importado com sucesso!')
         // }
       } catch (error) {
-        console.error("❌ Erro ao importar design:", error);
       }
     };
     reader.readAsText(file);
@@ -91,7 +94,7 @@ export function EditorPage() {
   };
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background h-screen">
       {/* Header */}
       <PageHeader title="Editor">
         <div className="flex gap-2">
@@ -114,16 +117,17 @@ export function EditorPage() {
       </PageHeader>
 
       {/* Main Content */}
-      <div className="flex">
+      <div className="flex h-full">
         {/* Chat Sidebar */}
         <ChatSidebar artConfig={artConfig} setArtConfig={setArtConfig} />
 
         {/* Preview Area */}
-        <div className="flex-1 relative ">
-          {/*<ClipGroupManager />*/}
-          {/*<Canvas />*/}
-          <CanvasEditorTesting />
-          <FloatingMenus />
+
+        <div className="flex-1 relative overflow-hidden h-full">
+          <Canvas />
+          <div className=" w-[450px] absolute top-2 left-1/2 -translate-x-1/2 z-50">
+            <Menu />
+          </div>
         </div>
       </div>
     </div>

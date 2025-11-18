@@ -1,4 +1,4 @@
-import { SavedTemplate, FabricTemplate, TemplateBaseId } from '@/types/templates'
+import { FabricTemplate, SavedTemplate, TemplateBaseId } from '@/types/templates'
 
 const STORAGE_KEY = 'creative-ai-templates'
 
@@ -87,7 +87,6 @@ export class TemplateManager {
         new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime()
       )
     } catch (error) {
-      console.error('Erro ao ler templates do localStorage:', error)
       return []
     }
   }
@@ -135,7 +134,6 @@ export class TemplateManager {
         template.json
       )
     } catch (error) {
-      console.error('Erro ao importar template:', error)
       return null
     }
   }
@@ -178,7 +176,6 @@ export class TemplateManager {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
     } catch (error) {
-      console.error('Erro ao salvar no localStorage:', error)
       throw new Error('Falha ao salvar template. Verifique o espaço disponível.')
     }
   }

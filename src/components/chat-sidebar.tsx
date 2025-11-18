@@ -56,7 +56,6 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
         },
       ])
     } catch (error) {
-      console.error("Erro ao gerar design:", error)
       setMessages((prev) => [
         ...prev.slice(0, -1), // Remove mensagem de loading
         {
@@ -97,9 +96,8 @@ export function ChatSidebar({ artConfig, setArtConfig }: ChatSidebarProps) {
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-line ${
-                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                }`}
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-line ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                  }`}
               >
                 {message.content}
               </div>

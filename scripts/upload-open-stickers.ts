@@ -7,7 +7,6 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || ""
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Configure as variáveis de ambiente")
     process.exit(1)
 }
 
@@ -27,7 +26,6 @@ async function uploadFolder(localPath: string, remotePath: string = BUCKET_PREFI
         const stats = fs.statSync(localItemPath)
 
         if (stats.isDirectory()) {
-            console.log(`📁 Processando pasta: ${item}`)
             await uploadFolder(localItemPath, remoteItemPath)
         } else if (item.endsWith(".svg") || item.endsWith(".png") || item.endsWith(".jpg") || item.endsWith(".jpeg")) {
             const fileBuffer = fs.readFileSync(localItemPath)
@@ -45,34 +43,26 @@ async function uploadFolder(localPath: string, remotePath: string = BUCKET_PREFI
                 })
 
             if (error) {
-                console.error(`   ❌ Erro ao fazer upload de ${item}:`, error.message)
             } else {
-                console.log(`   ✅ Upload: ${item}`)
             }
         }
     }
 }
 
 async function main() {
-    console.log("🚀 Iniciando upload da pasta open_stickers...\n")
     console.log(`📁 Pasta local: ${LOCAL_FOLDER}\n`)
 
     if (!fs.existsSync(LOCAL_FOLDER)) {
-        console.error(`❌ Pasta não encontrada: ${LOCAL_FOLDER}`)
         console.error("\n💡 Como usar:")
-        console.error("   1. Baixe/copie a pasta open_stickers para algum lugar")
         console.error("   2. Execute: pnpm upload-open-stickers <caminho-da-pasta>")
-        console.error("   Exemplo: pnpm upload-open-stickers D:/Downloads/open_stickers")
         console.error("\n   OU edite o script e ajuste a variável LOCAL_FOLDER")
         process.exit(1)
     }
 
     try {
         await uploadFolder(LOCAL_FOLDER)
-        console.log("\n🎉 Upload completo!")
         console.log("\n🔍 Próximo passo: execute 'pnpm index-cliparts-v2' para indexar no banco")
     } catch (error) {
-        console.error("❌ Erro durante upload:", error)
         process.exit(1)
     }
 }

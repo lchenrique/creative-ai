@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react'
-import { useCreativeStore } from '@/stores/creative-store'
+import type { ColorConfig } from '@/components/gradient-control'
 import { getDesignCommandService, type DesignCommand, type DesignResult } from '@/services/designCommandService'
 import { getImageSearchService } from '@/services/imageSearchService'
-import type { ColorConfig } from '@/components/gradient-control'
-import { INITIAL_COLOR_CONFIG } from '@/stores/creative-store'
+import { INITIAL_COLOR_CONFIG, useCreativeStore } from '@/stores/creative-store'
+import { useCallback, useState } from 'react'
 
 interface UseDesignCommandsResult {
   loading: boolean
@@ -67,8 +66,6 @@ export function useDesignCommands(): UseDesignCommandsResult {
         // 3. Gera comandos com Gemini
         const designService = getDesignCommandService()
         const result: DesignResult = await designService.generateDesign(description)
-
-        console.log('✅ Design gerado:', result.description)
         console.log('📋 Comandos:', result.commands)
 
         // 4. Executa cada comando
@@ -92,12 +89,9 @@ export function useDesignCommands(): UseDesignCommandsResult {
           // Pequeno delay entre comandos para melhor visualização
           await new Promise(resolve => setTimeout(resolve, 300))
         }
-
-        console.log('✅ Todos os comandos executados com sucesso!')
         setLoading(false)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao executar design'
-        console.error('❌ Erro:', errorMessage)
         setError(errorMessage)
         setLoading(false)
       }
@@ -153,7 +147,6 @@ async function executeCommand(
       break
 
     default:
-      console.warn(`Comando desconhecido: ${command.type}`)
   }
 }
 
@@ -171,7 +164,6 @@ async function executeBackgroundCommand(
       solidColor: command.params.color || '#ffffff',
     }
     updateBackground(config)
-    console.log('🎨 Background sólido aplicado:', command.params.color)
   } else if (command.action === 'set_gradient') {
     const config: ColorConfig = {
       ...INITIAL_COLOR_CONFIG,
@@ -189,7 +181,6 @@ async function executeBackgroundCommand(
       },
     }
     updateBackground(config)
-    console.log('🎨 Gradiente aplicado')
   } else if (command.action === 'set_image' && command.params.keywords) {
     // Busca imagem para background
     const imageService = getImageSearchService()
@@ -207,9 +198,7 @@ async function executeBackgroundCommand(
         },
       }
       updateBackground(config)
-      console.log('🖼️ Background com imagem aplicado:', images[0].keyword)
     } else {
-      console.warn('⚠️ Nenhuma imagem encontrada para background:', command.params.keywords)
     }
   } else if (command.action === 'set_video' && command.params.keywords) {
     // Busca vídeo para background (usa Pixabay que suporta vídeos)
@@ -228,9 +217,7 @@ async function executeBackgroundCommand(
         },
       }
       updateBackground(config)
-      console.log('🎥 Background com vídeo aplicado:', videos[0].keyword)
     } else {
-      console.warn('⚠️ Nenhum vídeo encontrado para background:', command.params.keywords)
     }
   }
 }
@@ -245,7 +232,6 @@ function executeTextCommand(
   const { addTextboxWithParams } = actions
 
   if (!addTextboxWithParams) {
-    console.warn('⚠️ addTextboxWithParams não disponível')
     return
   }
 
@@ -262,7 +248,6 @@ function executeTextCommand(
   }
 
   addTextboxWithParams(text, options)
-  console.log('📝 Texto adicionado:', text, options)
 }
 
 /**
@@ -285,10 +270,8 @@ function executeShapeCommand(
           top: command.params?.top,
         }
         addRectangleWithParams(options)
-        console.log('🟦 Retângulo adicionado com params:', options)
       } else {
         actions.addRectangle?.()
-        console.log('🟦 Retângulo adicionado (padrão)')
       }
       break
     case 'add_circle':
@@ -300,30 +283,23 @@ function executeShapeCommand(
           top: command.params?.top,
         }
         addCircleWithParams(options)
-        console.log('🔵 Círculo adicionado com params:', options)
       } else {
         actions.addCircle?.()
-        console.log('🔵 Círculo adicionado (padrão)')
       }
       break
     case 'add_triangle':
       actions.addTriangle?.()
-      console.log('🔺 Triângulo adicionado')
       break
     case 'add_line':
       actions.addLine?.()
-      console.log('➖ Linha adicionada')
       break
     case 'add_star':
       actions.addStar?.()
-      console.log('⭐ Estrela adicionada')
       break
     case 'add_heart':
       actions.addHeart?.()
-      console.log('❤️ Coração adicionado')
       break
     default:
-      console.warn(`Shape desconhecido: ${command.action}`)
   }
 }
 
@@ -350,15 +326,11 @@ async function executeImageCommand(
           height: command.params.height,
         }
         addImageFromURLWithParams(images[0].url, options)
-        console.log('🖼️ Imagem adicionada com posição:', images[0].keyword, options)
       } else if (addImageFromURL) {
         addImageFromURL(images[0].url)
-        console.log('🖼️ Imagem adicionada:', images[0].keyword)
       } else {
-        console.warn('⚠️ addImageFromURL não disponível')
       }
     } else {
-      console.warn('⚠️ Nenhuma imagem encontrada para:', command.params.keywords)
     }
   }
 }

@@ -38,7 +38,6 @@ export async function convertPNGtoSVG(imageUrl: string): Promise<string> {
 
     return data.svg;
   } catch (error) {
-    console.error("Erro ao converter PNG para SVG:", error);
     throw error;
   }
 }

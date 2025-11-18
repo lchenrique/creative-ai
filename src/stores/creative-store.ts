@@ -1,6 +1,7 @@
 import type { ColorConfig } from "@/components/gradient-control";
+import { supabase } from "@/lib/supabase";
+import { decode, encode } from "@toon-format/toon";
 import { create } from "zustand";
-import { encode, decode } from "@toon-format/toon";
 
 export const INITIAL_COLOR_CONFIG: ColorConfig = {
   colorType: "solid",
@@ -40,6 +41,25 @@ export interface LayerObject {
   name: string;
 }
 
+// Blend modes disponíveis
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "color-dodge"
+  | "color-burn"
+  | "hard-light"
+  | "soft-light"
+  | "difference"
+  | "exclusion"
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity";
+
 // Canvas Element (nosso canvas nativo)
 export interface CanvasElement {
   id: number;
@@ -53,13 +73,13 @@ export interface CanvasElement {
   isGroup?: boolean;
   children?: number[];
   type?:
-    | "box"
-    | "text"
-    | "circle"
-    | "triangle"
-    | "line"
-    | "image"
-    | "svg-clipart";
+  | "box"
+  | "text"
+  | "circle"
+  | "triangle"
+  | "line"
+  | "image"
+  | "svg-clipart";
   text?: string;
   fontSize?: number;
   fontFamily?: string;
@@ -74,15 +94,38 @@ export interface CanvasElement {
   shadowY?: number;
   shadowBlur?: number;
   shadowColor?: string;
+  // Stroke (border) properties
+  strokeEnabled?: boolean;
+  strokeColor?: string;
+  strokeWidth?: number;
+  borderRadius?: number;
+  opacity?: number;
+  blendMode?: BlendMode;
   image?: string;
   background?: ColorConfig;
   // SVG Clipart specific properties
   svgContent?: string; // Conteúdo SVG completo
   svgColors?: string[]; // Cores extraídas do SVG
   originalSvgUrl?: string; // URL original do SVG
+  // Warp transformation matrix
+  warpMatrix?: number[]; // Array de 16 números para matriz de transformação warp
+  // Clip-path properties
+
+  points?: { x: number; y: number }[]; // Pontos para clip-path em porcentagem  
+  clipPath?: string; // CSS clip-path string (ex: "polygon(50% 0%, 100% 100%, 0% 100%)")
 }
 
 export interface CreativeStore {
+  // Supabase persistence
+  currentArtworkId: string | null;
+  isSaving: boolean;
+  lastSavedAt: string | null;
+  saveToSupabase: (title?: string) => Promise<string | null>;
+  loadFromSupabase: (artworkId: string) => Promise<void>;
+  autoSave: () => Promise<void>;
+  saveToLocalStorage: () => void;
+  loadFromLocalStorage: () => void;
+
   // Background
   background: ColorConfig;
   updateBackground: (config: ColorConfig) => void;
@@ -137,6 +180,7 @@ export interface CreativeStore {
 
   // Remove Background from Image
   removeBackground: (elementId: number) => Promise<void>;
+  updatePoints: (elementId: number, pointes: { x: number, y: number }[]) => void;
 }
 
 const getNextId = (elements: CanvasElement[]) =>
@@ -277,9 +321,35 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
 
   updateSelectedElements: (updates) =>
     set((state) => ({
-      canvasElements: state.canvasElements.map((el) =>
-        state.selectedCanvasIds.includes(el.id) ? { ...el, ...updates } : el,
-      ),
+      canvasElements: state.canvasElements.map((el) => {
+        if (!state.selectedCanvasIds.includes(el.id)) return el;
+
+        // Deep merge para o background preservar propriedades aninhadas
+        if (updates.background && el.background) {
+          const mergedGradient = updates.background.gradient
+            ? {
+              ...el.background.gradient,
+              ...updates.background.gradient,
+              // Preservar stops se não estiver sendo atualizado
+              stops:
+                updates.background.gradient.stops ||
+                el.background.gradient.stops,
+            }
+            : el.background.gradient;
+
+          return {
+            ...el,
+            ...updates,
+            background: {
+              ...el.background,
+              ...updates.background,
+              gradient: mergedGradient,
+            },
+          };
+        }
+
+        return { ...el, ...updates };
+      }),
     })),
 
   deleteSelected: () =>
@@ -412,7 +482,6 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
     const element = state.canvasElements.find((el) => el.id === elementId);
 
     if (!element || element.type !== "image" || !element.image) {
-      console.error("Elemento não é uma imagem ou não tem URL");
       return;
     }
 
@@ -434,10 +503,7 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
         svgColors: colors,
         originalSvgUrl: element.image,
       });
-
-      console.log("✅ Imagem convertida para SVG com sucesso!");
     } catch (error) {
-      console.error("❌ Erro ao converter imagem para SVG:", error);
       throw error;
     }
   },
@@ -473,10 +539,7 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
         background: canvasData.background || INITIAL_COLOR_CONFIG,
         selectedCanvasIds: [],
       });
-
-      console.log("✅ Canvas carregado com sucesso!");
     } catch (error) {
-      console.error("❌ Erro ao importar canvas:", error);
       throw error;
     }
   },
@@ -495,8 +558,6 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
-    console.log("✅ Canvas salvo com sucesso em formato TOON!");
   },
 
   // Limpar canvas
@@ -506,7 +567,6 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
       selectedCanvasIds: [],
       background: INITIAL_COLOR_CONFIG,
     });
-    console.log("✅ Canvas limpo!");
   },
 
   // Exportar canvas como PNG
@@ -530,10 +590,8 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      console.log("✅ PNG exportado com sucesso!");
     } catch (error) {
       cleanupAfterExport();
-      console.error("❌ Erro ao exportar PNG:", error);
       throw error;
     }
   },
@@ -563,10 +621,8 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      console.log("✅ JPG exportado com sucesso!");
     } catch (error) {
       cleanupAfterExport();
-      console.error("❌ Erro ao exportar JPG:", error);
       throw error;
     }
   },
@@ -599,10 +655,8 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
 
       pdf.addImage(imgData, "PNG", 0, 0, img.width, img.height);
       pdf.save(`canvas-design-${Date.now()}.pdf`);
-      console.log("✅ PDF exportado com sucesso!");
     } catch (error) {
       cleanupAfterExport();
-      console.error("❌ Erro ao exportar PDF:", error);
       throw error;
     }
   },
@@ -617,8 +671,6 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
     }
 
     try {
-      console.log("🔄 Removendo fundo da imagem...");
-
       const VECTORIZE_API_URL =
         import.meta.env.VITE_VECTORIZE_API_URL || "http://localhost:3001";
 
@@ -649,11 +701,211 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
       state.updateElement(elementId, {
         image: data.image,
       });
-
-      console.log("✅ Fundo removido com sucesso!");
     } catch (error) {
-      console.error("❌ Erro ao remover fundo:", error);
       throw error;
     }
   },
+
+  // Supabase Persistence
+  currentArtworkId: null,
+  isSaving: false,
+  lastSavedAt: null,
+
+  saveToSupabase: async (title = "Untitled Artwork") => {
+    try {
+      const state = get();
+
+      set({ isSaving: true });
+      const timestamp = new Date().toISOString();
+
+      // Preparar dados do canvas
+      const canvasData = {
+        version: "1.0.0",
+        timestamp,
+        background: state.background,
+        elements: state.canvasElements,
+      };
+
+      console.log("📦 Dados preparados:", {
+        elements: canvasData.elements.length,
+        hasWarpMatrix: canvasData.elements.some((el) => el.warpMatrix),
+        positions: canvasData.elements.map((el) => ({
+          id: el.id,
+          type: el.type,
+          x: el.x,
+          y: el.y,
+          warpMatrix: el.warpMatrix ? "YES" : "NO",
+        })),
+      });
+
+      // Verificar se usuário está autenticado
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return null;
+      }
+      const artworkData = {
+        user_id: user.id,
+        title,
+        settings: canvasData as any,
+        updated_at: new Date().toISOString(),
+      };
+
+      let artworkId = state.currentArtworkId;
+
+      if (artworkId) {
+        // Atualizar artwork existente
+        const { error } = await supabase
+          .from("artworks")
+          .update(artworkData)
+          .eq("id", artworkId);
+
+        if (error) {
+          return null;
+        }
+      } else {
+        // Criar novo artwork
+        const { data, error } = await supabase
+          .from("artworks")
+          .insert(artworkData)
+          .select()
+          .single();
+
+        if (error) {
+          return null;
+        }
+
+        artworkId = data.id;
+        set({ currentArtworkId: artworkId });
+        console.log("✅ Artwork criado:", artworkId);
+      }
+
+      set({ isSaving: false, lastSavedAt: new Date().toISOString() });
+      return artworkId;
+    } catch (error) {
+      set({ isSaving: false });
+      return null;
+    }
+  },
+
+  loadFromSupabase: async (artworkId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("artworks")
+        .select("*")
+        .eq("id", artworkId)
+        .single();
+
+      if (error) {
+        return;
+      }
+
+      if (!data || !data.settings) {
+        return;
+      }
+      const canvasData = data.settings as unknown as {
+        version: string;
+        timestamp: string;
+        background: ColorConfig;
+        elements: CanvasElement[];
+      };
+
+      set({
+        canvasElements: canvasData.elements || [],
+        background: canvasData.background || INITIAL_COLOR_CONFIG,
+        selectedCanvasIds: [],
+        currentArtworkId: artworkId,
+      });
+
+      console.log("✅ Artwork carregado com sucesso:", {
+        artworkId,
+        elements: canvasData.elements.length,
+        hasWarpMatrix: canvasData.elements.some((el) => el.warpMatrix),
+        positions: canvasData.elements.map((el) => ({
+          id: el.id,
+          type: el.type,
+          x: el.x,
+          y: el.y,
+          warpMatrix: el.warpMatrix ? "YES" : "NO",
+        })),
+      });
+    } catch (error) {
+    }
+  },
+
+  autoSave: async () => {
+    const state = get();
+
+    // Primeiro salva localmente (instantâneo)
+    state.saveToLocalStorage();
+
+    // Depois salva no Supabase (com debounce aplicado pelo componente)
+    const result = await state.saveToSupabase("Auto-saved Canvas");
+    if (result) {
+    }
+  },
+
+  saveToLocalStorage: () => {
+    const state = get();
+    const canvasData = {
+      version: "1.0.0",
+      timestamp: new Date().toISOString(),
+      background: state.background,
+      elements: state.canvasElements,
+      currentArtworkId: state.currentArtworkId,
+    };
+
+    localStorage.setItem("canvas_backup", JSON.stringify(canvasData));
+  },
+
+  loadFromLocalStorage: () => {
+    try {
+      const stored = localStorage.getItem("canvas_backup");
+      if (!stored) return;
+
+      const canvasData = JSON.parse(stored) as {
+        version: string;
+        timestamp: string;
+        background: ColorConfig;
+        elements: CanvasElement[];
+        currentArtworkId: string | null;
+      };
+
+      set({
+        canvasElements: canvasData.elements || [],
+        background: canvasData.background || INITIAL_COLOR_CONFIG,
+        currentArtworkId: canvasData.currentArtworkId || null,
+      });
+
+      console.log("✅ Canvas carregado do localStorage:", {
+        elements: canvasData.elements.length,
+        hasWarpMatrix: canvasData.elements.some((el) => el.warpMatrix),
+        positions: canvasData.elements.map((el) => ({
+          id: el.id,
+          type: el.type,
+          x: el.x,
+          y: el.y,
+          warpMatrix: el.warpMatrix ? "YES" : "NO",
+        })),
+      });
+    } catch (error) {
+    }
+  },
+
+  updatePoints: (elementId: number, pointes: { x: number, y: number }[]) => {
+    const state = get();
+    const element = state.canvasElements.find((el) => el.id === elementId);
+
+    if (!element) {
+      throw new Error("Elemento não é um SVG Clipart ou Imagem");
+    }
+
+    state.updateElement(elementId, {
+      points: pointes,
+    });
+
+  }
+
 }));

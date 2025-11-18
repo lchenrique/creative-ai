@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
-import { FabricTemplate, TemplateModificationResult } from '@/types/templates'
+import { injectImagesIntoTemplate } from '@/lib/injectImagesIntoTemplate'
 import { getGeminiService } from '@/services/geminiService'
 import { getImageSearchService } from '@/services/imageSearchService'
-import { injectImagesIntoTemplate } from '@/lib/injectImagesIntoTemplate'
+import { FabricTemplate, TemplateModificationResult } from '@/types/templates'
+import { useCallback, useState } from 'react'
 
 interface UseTemplateModifierResult {
   modifiedTemplate: FabricTemplate | null
@@ -34,24 +34,17 @@ export function useTemplateModifier(): UseTemplateModifierResult {
           template,
           description
         )
-
-        console.log('✅ Template modificado pelo Gemini')
         console.log('📸 Keywords para imagens:', result.imageKeywords)
 
         // 2. Busca imagens baseadas nas keywords
         const imageService = getImageSearchService()
         const images = await imageService.searchImages(result.imageKeywords, 5)
-
-        console.log(`✅ Encontradas ${images.length} imagens`)
-
         // 3. Injeta URLs das imagens no template
         let finalTemplate = result.json
 
         if (images.length > 0) {
           finalTemplate = injectImagesIntoTemplate(result.json, images)
-          console.log('✅ Imagens injetadas no template')
         } else {
-          console.log('⚠️ Nenhuma imagem encontrada, usando template sem imagens')
         }
 
         setModifiedTemplate(finalTemplate)
@@ -59,7 +52,6 @@ export function useTemplateModifier(): UseTemplateModifierResult {
         return finalTemplate
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao modificar template'
-        console.error('❌ Erro:', errorMessage)
         setError(errorMessage)
         setLoading(false)
         return null

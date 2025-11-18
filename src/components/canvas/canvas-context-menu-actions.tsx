@@ -15,6 +15,7 @@ import {
   FileImage,
   Eraser,
   Image as ImageIcon,
+  Crop,
 } from "lucide-react";
 import type { CanvasElement } from "@/stores/creative-store";
 
@@ -31,6 +32,8 @@ interface CanvasContextMenuActionsProps {
   onConvertToSVG: () => void;
   onConvertToWebP: () => void;
   onRemoveBackground: () => void;
+  onCropImage: () => void;
+  onEditClipPath: () => void; // <-- Adicionado
   onGroup: () => void;
   onUngroup: () => void;
   onBringToFront: () => void;
@@ -52,6 +55,8 @@ export const CanvasContextMenuActions = ({
   onConvertToSVG,
   onConvertToWebP,
   onRemoveBackground,
+  onCropImage,
+  onEditClipPath, // <-- Adicionado
   onGroup,
   onUngroup,
   onBringToFront,
@@ -80,6 +85,10 @@ export const CanvasContextMenuActions = ({
     singleSelection &&
     selectedElement?.type === "image" &&
     !isRemovingBackground;
+
+  const canCropImage = singleSelection && selectedElement?.type === "image";
+
+  const canEditClipPath = singleSelection; // <-- Adicionado
 
   const canGroup =
     multiSelection &&
@@ -119,9 +128,18 @@ export const CanvasContextMenuActions = ({
         disabled={!canRemoveBackground}
       >
         <Eraser className="mr-2 h-4 w-4" />
-        <span>
-          {isRemovingBackground ? "Removendo..." : "Remover fundo"}
-        </span>
+        <span>{isRemovingBackground ? "Removendo..." : "Remover fundo"}</span>
+      </ContextMenuItem>
+
+      <ContextMenuItem onClick={onCropImage} disabled={!canCropImage}>
+        <Crop className="mr-2 h-4 w-4" />
+        <span>Recortar Imagem</span>
+      </ContextMenuItem>
+
+      {/* Opção para editar Clip Path */}
+      <ContextMenuItem onClick={onEditClipPath} disabled={!canEditClipPath}>
+        <Scissors className="mr-2 h-4 w-4" />
+        <span>Editar Máscara (Clip Path)</span>
       </ContextMenuItem>
 
       <ContextMenuSeparator />
@@ -152,18 +170,18 @@ export const CanvasContextMenuActions = ({
 
       <ContextMenuItem
         onClick={() => onToggleWarpable(false)}
-        disabled={!hasSelection || !useWarpable}
+        disabled={!hasSelection}
       >
         <Maximize2 className="mr-2 h-4 w-4" />
-        <span>{useWarpable ? "✓ " : ""}Modo Redimensionar</span>
+        <span>{!useWarpable ? "✓ " : ""}Modo Redimensionar</span>
       </ContextMenuItem>
 
       <ContextMenuItem
         onClick={() => onToggleWarpable(true)}
-        disabled={!hasSelection || useWarpable}
+        disabled={!hasSelection}
       >
         <Move3d className="mr-2 h-4 w-4" />
-        <span>{!useWarpable ? "✓ " : ""}Modo Distorcer</span>
+        <span>{useWarpable ? "✓ " : ""}Modo Distorcer</span>
       </ContextMenuItem>
 
       <ContextMenuItem onClick={onToggleClippable} disabled={!hasSelection}>

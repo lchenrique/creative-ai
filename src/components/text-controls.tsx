@@ -15,11 +15,13 @@ import {
   AlignRight,
   Italic,
   Droplet,
+  Pencil,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { FontCombobox } from "./font-combobox";
 import GradientColorPicker from "./gradient-color-picker";
 import GradientControl, { type ColorConfig } from "./gradient-control";
+import { ColorPicker } from "./color-picker";
 
 export function TextControls() {
   const updateElementConfig = useCreativeStore(
@@ -50,7 +52,6 @@ export function TextControls() {
         <FontCombobox
           value={element.fontFamily}
           onValueChange={(value) => {
-            console.log("Changing font to:", value);
             updateElementConfig({ fontFamily: value });
           }}
           className="w-full"
@@ -217,6 +218,26 @@ export function TextControls() {
         </ToggleGroup>
       </div>
 
+      {/* Opacidade */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <Label className="text-sm font-medium">Opacidade</Label>
+          <span className="text-sm text-muted-foreground">
+            {Math.round((element.opacity ?? 1) * 100)}%
+          </span>
+        </div>
+        <Slider
+          value={[(element.opacity ?? 1) * 100]}
+          onValueChange={(value) =>
+            updateElementConfig({ opacity: value[0] / 100 })
+          }
+          min={0}
+          max={100}
+          step={1}
+          className="w-full"
+        />
+      </div>
+
       {/* Sombra */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -241,31 +262,11 @@ export function TextControls() {
             {/* Cor da Sombra */}
             <div className="space-y-2">
               <Label className="text-xs font-medium">Cor da Sombra</Label>
-              <GradientControl
-                colorConfig={{
-                  colorType: "solid",
-                  solidColor: element.shadowColor || "rgba(0,0,0,0.5)",
-                  gradient: INITIAL_COLOR_CONFIG.gradient,
-                  pattern: null,
-                  image: null,
-                  video: null,
-                }}
-                setColorConfig={(newConfig) => {
-                  if (typeof newConfig === "function") {
-                    const updatedConfig = newConfig(
-                      element.background || INITIAL_COLOR_CONFIG,
-                    );
-                    updateElementConfig({
-                      shadowColor: updatedConfig.solidColor,
-                    });
-                  } else {
-                    updateElementConfig({ shadowColor: newConfig.solidColor });
-                  }
-                }}
-                enableGradient={false}
-                enablePattern={false}
-                enableImage={false}
-                enableVideo={false}
+              <ColorPicker
+                background={element.shadowColor || "rgba(0,0,0,0.5)"}
+                setBackground={(color) =>
+                  updateElementConfig({ shadowColor: color })
+                }
               />
             </div>
 
@@ -325,6 +326,61 @@ export function TextControls() {
                 min={0}
                 max={50}
                 step={1}
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Borda (Stroke) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Pencil className="w-4 h-4" />
+            Borda
+          </Label>
+          <Button
+            variant={element.strokeEnabled ? "default" : "outline"}
+            size="sm"
+            onClick={() =>
+              updateElementConfig({ strokeEnabled: !element.strokeEnabled })
+            }
+            className="text-xs h-7"
+          >
+            {element.strokeEnabled ? "Ativada" : "Desativada"}
+          </Button>
+        </div>
+
+        {element.strokeEnabled && (
+          <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800">
+            {/* Cor da Borda */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Cor da Borda</Label>
+              <ColorPicker
+                background={element.strokeColor || "#000000"}
+                setBackground={(color) =>
+                  updateElementConfig({ strokeColor: color })
+                }
+              />
+            </div>
+
+            {/* Largura da Borda */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-medium">Largura</Label>
+                <span className="text-xs text-muted-foreground">
+                  {element.strokeWidth || 0}px
+                </span>
+              </div>
+              <Slider
+                value={[element.strokeWidth || 0]}
+                onValueChange={(value) =>
+                  updateElementConfig({ strokeWidth: value[0] })
+                }
+                min={0}
+                max={20}
+                step={0.5}
                 className="w-full"
               />
             </div>

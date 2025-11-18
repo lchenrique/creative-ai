@@ -144,7 +144,7 @@ export function FontCombobox({
                     value={font.family}
                     onSelect={() => {
                       onValueChange(font.family === value ? "" : font.family);
-                      setOpen(false);
+                      // Não fecha mais o dropdown ao selecionar
                     }}
                     className="flex items-center justify-between"
                   >

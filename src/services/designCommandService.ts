@@ -1,5 +1,4 @@
 import { GoogleGenAI } from '@google/genai'
-import type { ColorConfig } from '@/components/gradient-control'
 
 /**
  * Comando de design que a IA pode retornar
@@ -54,7 +53,6 @@ export class DesignCommandService {
 
       return result
     } catch (error) {
-      console.error('Erro ao chamar Gemini API:', error)
       throw new Error(`Falha ao gerar design: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
@@ -177,7 +175,6 @@ Responda APENAS com JSON no seguinte formato:
 
       return result
     } catch (error) {
-      console.error('Erro ao fazer parse da resposta:', error)
       console.error('Resposta original:', responseText)
       throw new Error('Falha ao processar resposta do Gemini. Resposta inválida.')
     }

@@ -55,7 +55,7 @@ const ColorPickerComponent = ({
   const handleColorChange = (hexColor: string) => {
     isChangingColor.current = true;
     setCustomColor(hexColor);
-    setBackground(hexColor);
+    setBackground?.(hexColor);
   };
 
   return (
@@ -90,6 +90,7 @@ const ColorPickerComponent = ({
                 ) : (
                   "Escolher cor"
                 )}
+                oi
               </div>
             </div>
           </Button>

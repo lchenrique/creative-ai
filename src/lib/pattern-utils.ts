@@ -202,9 +202,6 @@ export const applyPatternColors = (
 
   const defaultColors = PATTERN_DEFAULTS[patternName];
   if (!defaultColors) return;
-
-  console.log(customColors);
-
   const style = document.createElement('style');
   const variables = {}
   if (customColors['--c1']) {

@@ -158,7 +158,6 @@ export function useSupabaseClipartsV2({
           setTotal(count || 0);
         }
       } catch (err) {
-        console.error("Erro ao buscar cliparts:", err);
         setError(err instanceof Error ? err.message : "Erro desconhecido");
         setCliparts([]);
         setTotal(0);

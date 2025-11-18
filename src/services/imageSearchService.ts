@@ -61,7 +61,6 @@ export class ImageSearchService {
           }
         }
       } catch (error) {
-        console.error(`Erro ao buscar imagem para "${keyword}":`, error)
       }
 
       // Limita resultados
@@ -106,7 +105,6 @@ export class ImageSearchService {
         alt: img.alt_description || img.description || query,
       }))
     } catch (error) {
-      console.error('Erro ao buscar no Unsplash:', error)
       return []
     }
   }
@@ -139,7 +137,6 @@ export class ImageSearchService {
         alt: img.tags,
       }))
     } catch (error) {
-      console.error('Erro ao buscar no Pixabay:', error)
       return []
     }
   }

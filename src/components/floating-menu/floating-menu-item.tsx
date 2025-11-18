@@ -6,6 +6,7 @@ export interface FloatingMenuItemProps {
   trigger: React.ReactNode;
   menuContent: React.ReactNode;
   contentTitle?: string;
+  open?: boolean;
 }
 
 export interface FloatingButtonTriggerProps {
@@ -20,7 +21,7 @@ const FloatingButtonTrigger = ({
   return (
     <Button
       data-slot="floating-button-trigger"
-      className="size-10 p-0"
+      className="size-8 p-0"
       variant="outline"
       onClick={onClick}
     >
@@ -65,11 +66,26 @@ export const FloatingMenuItem = ({
   trigger,
   menuContent,
   contentTitle,
+  open
 }: FloatingMenuItemProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(open || false);
   const [shouldRender, setShouldRender] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const idRef = useRef(`floating-menu-${++menuCounter}`);
+
+  useEffect(() => {
+    if (open) {
+      if (!shouldRender) {
+        setShouldRender(true);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setIsOpen(true));
+        });
+      } else {
+        setIsOpen(true);
+      }
+    }
+
+  }, [open]);
 
   const toggleOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -119,65 +135,6 @@ export const FloatingMenuItem = ({
       window.removeEventListener("floating-menu-open", handleOtherMenuOpen);
   }, []);
 
-  // Comentado: click fora desabilitado - drawer sempre aberto até clicar no botão
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     const target = event.target as HTMLElement;
-
-  //     // Verifica se o clique foi em qualquer área permitida
-  //     const insideAllowedArea = target.closest(
-  //       [
-  //         '[data-slot="floating-menu-content"]',
-  //         '[data-slot="floating-button-trigger"]',
-  //         '[data-slot="select-trigger"]',
-  //         '[data-slot="select-content"]',
-  //         '[data-slot="select-item"]',
-  //         '[data-slot="popover"]',
-  //         '[data-slot="popover-trigger"]',
-  //         '[data-slot="popover-content"]',
-  //         "[data-radix-popper-content-wrapper]",
-  //         "[data-radix-select-viewport]",
-  //         '[role="listbox"]',
-  //         '[role="option"]',
-  //         '[role="dialog"]',
-  //         ".react-colorful",
-  //         ".react-colorful__saturation",
-  //         ".react-colorful__hue",
-  //         ".react-colorful__alpha",
-  //         ".react-colorful__pointer",
-  //       ].join(","),
-  //     );
-
-  //     // Também verifica se clicou dentro de qualquer Portal do Radix UI
-  //     const isInsideRadixPortal =
-  //       target.closest("[data-radix-portal]") !== null;
-
-  //     // Verifica se há algum Select aberto no documento
-  //     const hasOpenSelect =
-  //       document.querySelector(
-  //         '[data-state="open"][data-slot="select-content"]',
-  //       ) !== null;
-
-  //     // Verifica se clicou em qualquer elemento do Select que está no DOM
-  //     const isSelectElement =
-  //       target.closest("[data-radix-select-trigger]") !== null ||
-  //       target.closest("[data-radix-select-content]") !== null ||
-  //       target.closest("[data-radix-select-item]") !== null;
-
-  //     if (
-  //       !insideAllowedArea &&
-  //       !isInsideRadixPortal &&
-  //       !hasOpenSelect &&
-  //       !isSelectElement
-  //     ) {
-  //       setIsOpen(false);
-  //     }
-  //   };
-
-  //   document.addEventListener("mousedown", handleClickOutside, false);
-  //   return () =>
-  //     document.removeEventListener("mousedown", handleClickOutside, false);
-  // }, []);
 
   const canvasRoot = document.getElementById("canvas-editor");
   if (!canvasRoot) return null;

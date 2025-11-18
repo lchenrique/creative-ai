@@ -301,7 +301,6 @@ export const Canvas = () => {
                 onWarpStart={() => setIsDragging(true)}
                 onWarpEnd={() => setIsDragging(false)}
                 onClip={(target, clipStyle) => {
-                  console.log("onClip", clipStyle);
                 }}
               />
             </div>
@@ -363,7 +362,6 @@ export const Canvas = () => {
 
           // Para se clicar em handles do Moveable
           if (moveableRef.current?.isMoveableElement(target)) {
-            console.log("Stopping - is moveable element");
             e.stop();
             return;
           }
@@ -378,7 +376,6 @@ export const Canvas = () => {
             );
 
             if (!isNaN(clickedId) && selectedIds.includes(clickedId)) {
-              console.log("Stopping - click on selected element for drag");
               e.stop();
             }
             // Se clicar em elemento não selecionado, deixa o Selecto selecionar
@@ -386,7 +383,6 @@ export const Canvas = () => {
           // Se não clicar em nenhum elemento (.element), deixa fazer seleção de retângulo
         }}
         onSelect={(e) => {
-          console.log("Selecto onSelect", e.selected);
           // Seleciona elementos ao clicar
           const selected = e.selected
             .map((el) => Number(el.getAttribute("data-element-id")))

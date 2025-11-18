@@ -6,13 +6,7 @@ import path from "path"
 // Variáveis de ambiente carregadas pelo dotenv/config
 const supabaseUrl = process.env.VITE_SUPABASE_URL || ""
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-
-console.log("🔍 Verificando variáveis de ambiente:")
-console.log(`   VITE_SUPABASE_URL: ${supabaseUrl ? "✅ Configurado" : "❌ Não encontrado"}`)
-console.log(`   SUPABASE_SERVICE_ROLE_KEY: ${supabaseKey ? "✅ Configurado" : "❌ Não encontrado"}`)
-
 if (!supabaseUrl || !supabaseKey) {
-    console.error("\n❌ Erro: Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env")
     console.error("   Certifique-se de que o arquivo .env existe na raiz do projeto")
     process.exit(1)
 }
@@ -63,14 +57,11 @@ async function uploadDir(localPath: string, remotePath = "") {
                     })
 
                 if (error) {
-                    console.error(`❌ Erro ao enviar ${remoteFilePath}:`, error.message)
                     errorCount++
                 } else {
-                    console.log(`✅ Enviado: ${remoteFilePath}`)
                     uploadedCount++
                 }
             } catch (error) {
-                console.error(`❌ Erro ao ler arquivo ${localFilePath}:`, error)
                 errorCount++
             }
         }
@@ -82,46 +73,32 @@ async function createBucketIfNotExists() {
     const bucketExists = buckets?.some((b) => b.name === bucketName)
 
     if (!bucketExists) {
-        console.log(`📦 Criando bucket "${bucketName}"...`)
         const { error } = await supabase.storage.createBucket(bucketName, {
             public: true,
             fileSizeLimit: 5242880, // 5MB
         })
 
         if (error) {
-            console.error("❌ Erro ao criar bucket:", error.message)
             process.exit(1)
         }
-        console.log("✅ Bucket criado com sucesso!")
     } else {
-        console.log(`✅ Bucket "${bucketName}" já existe`)
     }
 }
 
 async function main() {
-    console.log("🚀 Iniciando upload de cliparts...\n")
-
     // Criar bucket se não existir
     await createBucketIfNotExists()
 
     // Upload de cada pasta
     for (const folder of folders) {
-        console.log(`\n📁 Processando pasta: ${folder.name}`)
         console.log(`   Local: ${folder.path}`)
-        console.log(`   Remoto: ${folder.name}/\n`)
-
         try {
             await uploadDir(folder.path, folder.name)
         } catch (error) {
-            console.error(`❌ Erro ao processar ${folder.name}:`, error)
         }
     }
-
-    console.log("\n" + "=".repeat(60))
     console.log("🎉 Upload completo!")
-    console.log(`✅ Arquivos enviados: ${uploadedCount}`)
     console.log(`❌ Erros: ${errorCount}`)
-    console.log("=".repeat(60))
 }
 
 main().catch(console.error)

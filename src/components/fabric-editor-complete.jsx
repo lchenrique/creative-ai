@@ -30,8 +30,7 @@ const FabricEditor = () => {
         fontFaces.forEach(font => document.fonts.add(font));
         setFontsLoaded(true);
       } catch (error) {
-        console.error('Font loading error:', error);
-      }
+ }
     };
 
     loadFonts();

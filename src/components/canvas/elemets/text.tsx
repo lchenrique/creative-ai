@@ -32,6 +32,14 @@ export const TextElement = ({
     ? `${el.shadowX || 0}px ${el.shadowY || 0}px ${el.shadowBlur || 0}px ${el.shadowColor || "rgba(0,0,0,0.5)"}`
     : undefined;
 
+  const dropShadow = el.shadowEnabled
+    ? `drop-shadow(${el.shadowX || 0}px ${el.shadowY || 0}px ${el.shadowBlur || 0}px ${el.shadowColor || "rgba(0,0,0,0.5)"})`
+    : undefined;
+
+  const textStroke = el.strokeEnabled
+    ? `${el.strokeWidth || 0}px ${el.strokeColor || "#000000"}`
+    : undefined;
+
   // Quando Shift é pressionado, salva altura e fontSize inicial
   if (isShift && !prevShiftRef.current) {
     // Shift acabou de ser pressionado
@@ -74,9 +82,16 @@ export const TextElement = ({
   }, [fontSize]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+    if (e.key === "Enter") {
+      if (!e.shiftKey) {
+        // Enter sem Shift: previne
+        e.preventDefault();
+      } else {
+        // Shift+Enter: permite quebra de linha
+        // Deixa o comportamento padrão acontecer
+      }
     }
+
     if (e.key === "Escape") {
       e.preventDefault();
       onEditEnd?.();
@@ -88,11 +103,6 @@ export const TextElement = ({
     onTextChange?.(html);
     onEditEnd?.();
   }, [onTextChange, onEditEnd, editableRef]);
-
-  console.log({
-    width,
-    height,
-  });
 
   return (
     <div
@@ -113,16 +123,29 @@ export const TextElement = ({
             wordBreak: "break-word",
             textAlign: el.textAlign || "left",
             letterSpacing: `${el.letterSpacing || 0}px`,
-            lineHeight: `${fontSize}px`,
-            textShadow,
+            lineHeight: el.lineHeight || 1.2,
             fontSize: `${fontSize}px`,
+            WebkitTextStroke: textStroke,
+            paintOrder: el.strokeEnabled ? "stroke fill" : undefined,
+            strokeLinejoin: el.strokeEnabled ? "round" : undefined,
+            strokeLinecap: el.strokeEnabled ? "round" : undefined,
+            filter: dropShadow,
           }}
-        >
-          {el.text}
-        </div>
+          dangerouslySetInnerHTML={{ __html: el.text || "Texto" }}
+        />
       ) : (
         <div
-          ref={editableRef}
+          ref={(node) => {
+            if (node && editableRef) {
+              (
+                editableRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = node;
+              // Só define o conteúdo inicial se estiver vazio
+              if (node.innerHTML === "") {
+                node.innerHTML = el.text || "";
+              }
+            }
+          }}
           autoFocus
           contentEditable
           suppressContentEditableWarning
@@ -130,6 +153,15 @@ export const TextElement = ({
             handleBlur();
           }}
           onKeyDown={handleKeyDown}
+          onInput={(e) => {
+            // Atualiza conforme o usuário digita, mas não força re-render
+            const html = e.currentTarget.innerHTML;
+            onTextChange?.(html);
+          }}
+          data-placeholder={
+            !el.text || el.text.trim() === "" ? "Digite seu texto..." : ""
+          }
+          className={!el.text || el.text.trim() === "" ? "empty-text" : ""}
           style={{
             fontFamily: el.fontFamily,
             fontWeight: el.fontWeight,
@@ -142,9 +174,13 @@ export const TextElement = ({
             textAlign: el.textAlign || "left",
             letterSpacing: `${el.letterSpacing || 0}px`,
             lineHeight: el.lineHeight || 1.2,
-            textShadow,
+            fontSize: `${fontSize}px`,
+            WebkitTextStroke: textStroke,
+            paintOrder: el.strokeEnabled ? "stroke fill" : undefined,
+            strokeLinejoin: el.strokeEnabled ? "round" : undefined,
+            strokeLinecap: el.strokeEnabled ? "round" : undefined,
+            filter: dropShadow,
           }}
-          dangerouslySetInnerHTML={{ __html: el.text || "" }}
         />
       )}
     </div>

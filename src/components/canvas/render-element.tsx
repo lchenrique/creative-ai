@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
-import { generateBackgroundCSS } from "@/lib/utils";
 import type { CanvasElement } from "@/stores/creative-store";
 import { TextElement } from "./elemets/text";
+import ClipPathEditor from "../clip-path/clip-path-generator";
 interface ElementRendererProps {
   element: CanvasElement;
   isEditing?: boolean;
@@ -15,7 +15,6 @@ export const CanvasRenderElement = ({
   isEditing,
   onTextChange,
   onEditEnd,
-  isResizing,
 }: ElementRendererProps) => {
   const editableRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,7 +26,6 @@ export const CanvasRenderElement = ({
 
     /// listener  element
     //
-    console.log({ textElement });
   }, []);
 
   // Salva e finaliza edição
@@ -36,18 +34,6 @@ export const CanvasRenderElement = ({
     onTextChange?.(html);
     onEditEnd?.();
   }, [onTextChange, onEditEnd]);
-
-  // Key handlers: Enter cria nova linha com Shift+Enter; sem Shift previne quebra
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      // Não chamamos handleBlur aqui: quer salvo só no blur/click fora
-    }
-    if (e.key === "Escape") {
-      e.preventDefault();
-      onEditEnd?.(); // cancela sem salvar
-    }
-  };
 
   // Quando entra em edição, injeta o texto inicial (apenas ao entrar)
   useEffect(() => {
@@ -98,6 +84,7 @@ export const CanvasRenderElement = ({
             width: `${el.w}px`,
             height: `${el.h}px`,
             boxShadow,
+            borderRadius: el.borderRadius ? `${el.borderRadius}px` : undefined,
           }}
         />
       );
@@ -110,8 +97,8 @@ export const CanvasRenderElement = ({
 
       return (
         <div
-          className="absolute inset-0 rounded-full bg-red-800"
-          style={{ boxShadow }}
+          className="absolute inset-0 rounded-full"
+          style={{ boxShadow, clipPath: el.clipPath }}
         />
       );
     },
@@ -123,7 +110,7 @@ export const CanvasRenderElement = ({
       return (
         <div
           className="absolute inset-0 bg-green-400 [clip-path:polygon(50%_0%,0%_100%,100%_100%)]"
-          style={{ boxShadow }}
+          style={{ boxShadow, clipPath: el.clipPath }}
         />
       );
     },
@@ -133,7 +120,10 @@ export const CanvasRenderElement = ({
         : undefined;
 
       return (
-        <div className="absolute inset-0 bg-yellow-400" style={{ boxShadow }} />
+        <div
+          className="absolute inset-0 bg-yellow-400"
+          style={{ boxShadow, clipPath: el.clipPath }}
+        />
       );
     },
     image: (el: CanvasElement) => {
@@ -142,12 +132,22 @@ export const CanvasRenderElement = ({
         : undefined;
 
       return (
-        <div className="absolute inset-0" style={{ boxShadow }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            boxShadow,
+            borderRadius: el.borderRadius ? `${el.borderRadius}px` : undefined,
+            overflow: "hidden",
+            clipPath: el.clipPath,
+          }}
+        >
           {el.image ? (
             <img
+              key={el.image}
               src={el.image}
               alt="Canvas image"
               className="w-full h-full object-cover"
+              style={{ display: "block" }}
             />
           ) : (
             <div className="absolute inset-0 bg-gray-400" />
@@ -196,7 +196,12 @@ export const CanvasRenderElement = ({
       return (
         <div
           className="absolute inset-0"
-          style={{ boxShadow }}
+          style={{
+            boxShadow,
+            borderRadius: el.borderRadius ? `${el.borderRadius}px` : undefined,
+            overflow: "hidden",
+            clipPath: el.clipPath,
+          }}
           dangerouslySetInnerHTML={{ __html: svgContent }}
         />
       );

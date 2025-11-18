@@ -29,7 +29,6 @@ async function listAllFiles(prefix = ''): Promise<any[]> {
     })
 
     if (error) {
-        console.error(`❌ Erro ao listar '${prefix}':`, error)
         return []
     }
 
@@ -137,7 +136,6 @@ async function getAllFilesWithCache(): Promise<any[]> {
                 setAllImages(imagesWithUrls)
                 setTotal(imagesWithUrls.length)
             } catch (err) {
-                console.error('Erro ao buscar cliparts do Supabase:', err)
                 setError(err instanceof Error ? err.message : 'Erro desconhecido')
                 setAllImages([])
                 setCategories([])

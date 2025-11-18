@@ -5,7 +5,6 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || ""
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Configure as variáveis de ambiente")
     process.exit(1)
 }
 
@@ -47,7 +46,6 @@ async function listAllFiles(prefix = ''): Promise<any[]> {
     })
 
     if (error) {
-        console.error(`❌ Erro ao listar '${prefix}':`, error)
         return []
     }
 
@@ -74,42 +72,29 @@ async function listAllFiles(prefix = ''): Promise<any[]> {
 }
 
 async function indexCliparts() {
-    console.log("🚀 Iniciando indexação de cliparts...\n")
-
     try {
         // 1. Buscar todos os arquivos do Storage de todas as pastas
-        console.log("📁 Listando arquivos do Storage...")
         let allSvgFiles: any[] = []
 
         for (const folder of FOLDERS_TO_INDEX) {
-            console.log(`   📂 Processando pasta: ${folder}`)
             const files = await listAllFiles(folder)
             const svgFiles = files.filter(f =>
                 (f.name.endsWith('.svg') || f.name.endsWith('.png') || f.name.endsWith('.jpg') || f.name.endsWith('.jpeg')) &&
                 !f.name.includes('.emptyFolderPlaceholder')
             )
             allSvgFiles = allSvgFiles.concat(svgFiles)
-            console.log(`      ✅ Encontrados ${svgFiles.length} arquivos de imagem`)
         }
-
-        console.log(`\n✅ Total de ${allSvgFiles.length} arquivos de imagem encontrados\n`)
-
         // 2. Limpar tabela existente
-        console.log("🗑️  Limpando tabela cliparts...")
         const { error: deleteError } = await supabase
             .from('cliparts')
             .delete()
             .neq('id', '00000000-0000-0000-0000-000000000000') // Deleta todos
 
         if (deleteError && deleteError.code !== 'PGRST116') {
-            console.error("❌ Erro ao limpar tabela:", deleteError)
         } else {
-            console.log("✅ Tabela limpa\n")
         }
 
         // 3. Inserir cliparts na tabela com keywords
-        console.log("💾 Inserindo cliparts na tabela...")
-
         const clipartsData = allSvgFiles.map(file => {
             const { data } = supabase.storage.from('cliparts').getPublicUrl(file.fullPath)
             const pathParts = file.fullPath.split('/')
@@ -141,24 +126,15 @@ async function indexCliparts() {
                 .insert(batch)
 
             if (insertError) {
-                console.error(`❌ Erro ao inserir lote ${Math.floor(i / batchSize) + 1}:`, insertError.message)
                 errorCount += batch.length
             } else {
                 insertedCount += batch.length
                 const progress = Math.round((insertedCount / clipartsData.length) * 100)
-                console.log(`✅ Lote ${Math.floor(i / batchSize) + 1}: ${batch.length} cliparts (${progress}%)`)
             }
         }
-
-        console.log("\n" + "=".repeat(60))
         console.log("🎉 Indexação completa!")
-        console.log(`✅ Cliparts indexados: ${insertedCount}`)
         console.log(`❌ Erros: ${errorCount}`)
-        console.log("=".repeat(60))
-
         // 4. Mostrar estatísticas
-        console.log("\n📊 Estatísticas por categoria:")
-
         // Usar count por categoria para evitar limite de 1000
         const { data: magiconsCount } = await supabase
             .from('cliparts')
@@ -169,12 +145,9 @@ async function indexCliparts() {
             .from('cliparts')
             .select('*', { count: 'exact', head: true })
             .eq('category', 'open_stickers')
-
-        console.log(`   magicons: ${magiconsCount || 0}`)
         console.log(`   open_stickers: ${openStickersCount || 0}`)
 
         // 5. Mostrar exemplo de keywords
-        console.log("\n🏷️  Exemplo de keywords geradas:")
         const { data: samples } = await supabase
             .from('cliparts')
             .select('name, category, keywords')
@@ -182,13 +155,11 @@ async function indexCliparts() {
 
         if (samples) {
             samples.forEach((item: any) => {
-                console.log(`   ${item.name} [${item.category}]`)
                 console.log(`      → ${item.keywords.join(', ')}`)
             })
         }
 
     } catch (error) {
-        console.error("❌ Erro durante indexação:", error)
         process.exit(1)
     }
 }

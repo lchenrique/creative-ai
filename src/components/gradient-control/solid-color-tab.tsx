@@ -1,22 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { ColorPicker } from "@/components/color-picker";
-import type { ColorConfig } from ".";
+import type { ColorConfig } from "@/stores/canva-store";
 
 interface SolidColorTabProps {
   colorConfig: ColorConfig;
-  setColorConfig: React.Dispatch<React.SetStateAction<ColorConfig>>;
+  setColorConfig: (value: string) => void;
 }
 
 const SOLIDS_PRESETS = [
+  "#ffffff", // Branco
+  "#000000", // Preto
   "#ff6b00", // Laranja
   "#ffa500", // Laranja claro
   "#4dd8a5", // Verde água
   "#00c896", // Verde
   "#64b5ff", // Azul claro
   "#0078d4", // Azul
-  "#a0adb8", // Cinza azulado
-  "#6e7c87", // Cinza
   "#e91e63", // Rosa vibrante
   "#ff6b9d", // Rosa claro
   "#9b59b6", // Roxo
@@ -36,9 +36,9 @@ export const SolidColorTab = ({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <ColorPicker
-        background={colorConfig.solidColor}
+        background={colorConfig.value}
         setBackground={(color) =>
-          setColorConfig((prev) => ({ ...prev, solidColor: color }))
+          setColorConfig(color)
         }
       />
     </div>
@@ -49,13 +49,10 @@ export const SolidColorTab = ({
         <Button
           key={index}
           data-slot="floating-menu-content"
-          variant="outline"
-          className="h-8 w-full p-0 overflow-hidden border-border hover:scale-105 transition-transform"
+          variant="ghost"
+          className="h-8 w-full p-0 overflow-hidden border hover:border-accent"
           onClick={() =>
-            setColorConfig((prev) => ({
-              ...prev,
-              solidColor: color,
-            }))
+            setColorConfig(color)
           }
         >
           <div

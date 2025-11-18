@@ -101,14 +101,11 @@ export const ImageGallery = () => {
   const handleClipartClick = useCallback(
     async (url: string) => {
       try {
-        console.log("🔍 Carregando clipart de:", url);
-
         // Tentar baixar como blob primeiro
         const response = await fetch(url);
         const blob = await response.blob();
         const contentType = blob.type;
         const blobSize = blob.size;
-        console.log("📦 Blob Type:", contentType);
         console.log("📏 Blob Size:", blobSize, "bytes");
 
         // Se for imagem PNG/JPG, adicionar como imagem normal
@@ -117,7 +114,6 @@ export const ImageGallery = () => {
           contentType.includes("image/jpeg") ||
           contentType.includes("image/jpg")
         ) {
-          console.log("🖼️ PNG detectado, adicionando como imagem");
           addImageToCanvas?.(url);
           return;
         }
@@ -131,19 +127,16 @@ export const ImageGallery = () => {
 
         // Validar se é SVG válido
         if (!svgText.trim().startsWith("<") || !svgText.includes("svg")) {
-          console.error("Conteúdo não é SVG válido");
           alert("Erro: O arquivo não contém um SVG válido");
           return;
         }
 
         // SVG válido - adicionar ao canvas
-        console.log("✅ SVG válido detectado, adicionando ao canvas");
         addClipartToCanvas?.(svgText, url);
       } catch (error) {
-        console.error("Erro ao carregar clipart:", error);
         alert(
           "Erro ao carregar clipart: " +
-            (error instanceof Error ? error.message : "Erro desconhecido"),
+          (error instanceof Error ? error.message : "Erro desconhecido"),
         );
       }
     },
@@ -232,21 +225,19 @@ export const ImageGallery = () => {
 
       setUserUploads(uploads);
     } catch (error) {
-      console.error("Erro ao carregar uploads:", error);
       setUploadError("Erro ao carregar suas imagens");
     } finally {
       setUploadsLoading(false);
     }
   }, [user]);
 
-  // Função para fazer upload de imagem
+  // Função para fazer upload de múltiplas imagens
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+    const files = event.target.files;
+    if (!files || files.length === 0 || !user) return;
 
-    // Validar tipo de arquivo
     const validTypes = [
       "image/png",
       "image/jpeg",
@@ -254,14 +245,27 @@ export const ImageGallery = () => {
       "image/webp",
       "image/svg+xml",
     ];
-    if (!validTypes.includes(file.type)) {
-      alert("Tipo de arquivo inválido. Use PNG, JPG, WEBP ou SVG.");
+
+    // Validar todos os arquivos antes de fazer upload
+    const filesArray = Array.from(files);
+    const invalidFiles = filesArray.filter(
+      (file) => !validTypes.includes(file.type),
+    );
+    const oversizedFiles = filesArray.filter(
+      (file) => file.size > 5 * 1024 * 1024,
+    );
+
+    if (invalidFiles.length > 0) {
+      alert(
+        `${invalidFiles.length} arquivo(s) com tipo inválido. Use PNG, JPG, WEBP ou SVG.`,
+      );
       return;
     }
 
-    // Validar tamanho (máx 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Arquivo muito grande. Tamanho máximo: 5MB");
+    if (oversizedFiles.length > 0) {
+      alert(
+        `${oversizedFiles.length} arquivo(s) muito grande(s). Tamanho máximo: 5MB por arquivo`,
+      );
       return;
     }
 
@@ -269,14 +273,27 @@ export const ImageGallery = () => {
     setUploadError(null);
 
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const filePath = `images/${user.id}/${fileName}`;
+      let uploadedCount = 0;
+      let failedCount = 0;
 
-      const { error: uploadError } = await supabase.storage
-        .from("cliparts")
-        .upload(filePath, file);
+      // Upload de todos os arquivos em paralelo
+      const uploadPromises = filesArray.map(async (file) => {
+        try {
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+          const filePath = `images/${user.id}/${fileName}`;
 
-      if (uploadError) throw uploadError;
+          const { error: uploadError } = await supabase.storage
+            .from("cliparts")
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+          uploadedCount++;
+        } catch (error) {
+          failedCount++;
+        }
+      });
+
+      await Promise.all(uploadPromises);
 
       // Recarregar lista de uploads
       await loadUserUploads();
@@ -285,9 +302,17 @@ export const ImageGallery = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      // Mostrar resultado
+      if (failedCount === 0) {
+        alert(`${uploadedCount} arquivo(s) enviado(s) com sucesso!`);
+      } else {
+        alert(
+          `${uploadedCount} arquivo(s) enviado(s) com sucesso. ${failedCount} arquivo(s) falharam.`,
+        );
+      }
     } catch (error) {
-      console.error("Erro ao fazer upload:", error);
-      setUploadError("Erro ao fazer upload da imagem");
+      setUploadError("Erro ao fazer upload das imagens");
     } finally {
       setIsUploading(false);
     }
@@ -311,7 +336,6 @@ export const ImageGallery = () => {
       // Recarregar lista
       await loadUserUploads();
     } catch (error) {
-      console.error("Erro ao deletar imagem:", error);
       alert("Erro ao deletar imagem");
     }
   };
@@ -382,6 +406,7 @@ export const ImageGallery = () => {
                     accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
                     onChange={handleFileUpload}
                     className="hidden"
+                    multiple
                   />
                   <Button
                     onClick={() => fileInputRef.current?.click()}
@@ -396,12 +421,13 @@ export const ImageGallery = () => {
                     ) : (
                       <>
                         <Upload className="w-4 h-4 mr-2" />
-                        Enviar Imagem
+                        Enviar Imagens
                       </>
                     )}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Formatos aceitos: PNG, JPG, WEBP, SVG (máx 5MB)
+                    Formatos aceitos: PNG, JPG, WEBP, SVG (máx 5MB cada). Você
+                    pode selecionar múltiplos arquivos.
                   </p>
                 </div>
 
