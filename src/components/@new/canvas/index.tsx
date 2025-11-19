@@ -5,9 +5,11 @@ import Moveable, { type MoveableTargetGroupsType } from "react-moveable";
 import { GroupManager, type TargetList } from "@moveable/helper";
 import { canvasActions } from "./canvas-actions";
 import { useCallback } from "react";
-import { Elements } from "./elements";
+import { Elements, Menu } from "./elements/elements";
 import { useCanvasStore } from "@/stores/canva-store";
 import { Editable } from "./editable-able";
+import { PathEditorAble } from "./path-editor-able";
+import { PathEditor } from "./path-editor";
 
 export default function Canvas() {
     const groupManager = React.useMemo<GroupManager>(() => new GroupManager([]), []);
@@ -270,6 +272,15 @@ export default function Canvas() {
     }, [groupManager, setSelectedTargets, clippableId]);
 
 
+    const onClipPathChange = useCallback((newClipPath: string) => {
+        console.log('Novo clipPath:', newClipPath);
+        if (clippableId && updateElementConfig) {
+            updateElementConfig(clippableId, {
+                style: { clipPath: newClipPath }
+            });
+        }
+
+    }, [clippableId, updateElementConfig]);
 
     return <div id="canvas-editor" className="root h-full">
         <div className=" h-full w-full flex items-center justify-center">
@@ -291,7 +302,7 @@ export default function Canvas() {
                     rotatable={!clippableId}
                     scalable={!clippableId}
                     resizable={true}
-                    clippable={!!clippableId}
+                    // clippable={!!clippableId}
                     dragWithClip={false}
                     customClipPath={currentClipPath}
                     target={targets}
@@ -312,44 +323,44 @@ export default function Canvas() {
                     onRenderGroup={canvasActions.onRenderGroup}
                     onResize={canvasActions.onResize}
                     onRotate={canvasActions.onRotate}
-                    onClip={e => {
-                        // Convert pixel values to percentages for proper scaling
-                        const rect = e.target.getBoundingClientRect();
-                        let clipStyle = e.clipStyle;
+                    // onClip={e => {
+                    //     // Convert pixel values to percentages for proper scaling
+                    //     const rect = e.target.getBoundingClientRect();
+                    //     let clipStyle = e.clipStyle;
 
-                        // Check if it's a polygon with pixel values
-                        const match = clipStyle.match(/polygon\(([^)]+)\)/);
-                        if (match && rect.width > 0 && rect.height > 0) {
-                            const pointsStr = match[1];
-                            const points = pointsStr.split(',').map(p => p.trim());
+                    //     // Check if it's a polygon with pixel values
+                    //     const match = clipStyle.match(/polygon\(([^)]+)\)/);
+                    //     if (match && rect.width > 0 && rect.height > 0) {
+                    //         const pointsStr = match[1];
+                    //         const points = pointsStr.split(',').map(p => p.trim());
 
-                            const convertedPoints = points.map(point => {
-                                // Parse "Xpx Ypx" format
-                                const parts = point.split(' ');
-                                if (parts.length === 2) {
-                                    const x = parseFloat(parts[0]);
-                                    const y = parseFloat(parts[1]);
+                    //         const convertedPoints = points.map(point => {
+                    //             // Parse "Xpx Ypx" format
+                    //             const parts = point.split(' ');
+                    //             if (parts.length === 2) {
+                    //                 const x = parseFloat(parts[0]);
+                    //                 const y = parseFloat(parts[1]);
 
-                                    // Convert to percentages
-                                    const xPercent = (x / rect.width) * 100;
-                                    const yPercent = (y / rect.height) * 100;
+                    //                 // Convert to percentages
+                    //                 const xPercent = (x / rect.width) * 100;
+                    //                 const yPercent = (y / rect.height) * 100;
 
-                                    return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
-                                }
-                                return point;
-                            });
+                    //                 return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
+                    //             }
+                    //             return point;
+                    //         });
 
-                            clipStyle = `polygon(${convertedPoints.join(', ')})`;
-                        }
+                    //         clipStyle = `polygon(${convertedPoints.join(', ')})`;
+                    //     }
 
-                        e.target.style.clipPath = clipStyle;
-                        // Save to store
-                        if (clippableId && updateElementConfig) {
-                            updateElementConfig(clippableId, {
-                                style: { clipPath: clipStyle }
-                            });
-                        }
-                    }}
+                    //     e.target.style.clipPath = clipStyle;
+                    //     // Save to store
+                    //     if (clippableId && updateElementConfig) {
+                    //         updateElementConfig(clippableId, {
+                    //             style: { clipPath: clipStyle }
+                    //         });
+                    //     }
+                    // }}
                     onRotateEnd={(e) => canvasActions.onRotateEnd(e, (elementId, newAngle) => {
                     })}
                     snappable={true}
@@ -370,6 +381,11 @@ export default function Canvas() {
                     onSelectEnd={onSelectEnd}
                 ></Selecto>
                 <Elements selectedIds={selectedIds} />
+                {clippableId && <PathEditor elementId={clippableId}
+                    width={450}
+                    height={800}
+                    initialClipPath={currentClipPath || ""}
+                    onClipPathChange={onClipPathChange} onClose={() => { }} />}
             </div>
 
         </div>

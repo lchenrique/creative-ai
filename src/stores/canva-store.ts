@@ -7,16 +7,45 @@ export type ColorConfig = {
     value: string;
 }
 
+// Path point types for clip-path editor
+export type PathPointType = 'L' | 'Q' | 'C';
+export interface PathPoint {
+    id: string;
+    x: number;
+    y: number;
+    type: PathPointType;
+    cp1?: { x: number; y: number };
+    cp2?: { x: number; y: number };
+}
+
 export interface ElementConfig {
     size: { width: number; height: number };
     position: { x: number; y: number };
     style: {
-        color?: ColorConfig;
+        // Background & Border
+        backgroundColor?: ColorConfig;
         borderRadius?: number;
         borderWidth?: number;
         borderColor?: string;
-        backgroundColor?: ColorConfig;
+        // Clip path
         clipPath?: string;
+        clipPathPoints?: PathPoint[];
+        // Text properties (CSS standard)
+        color?: string;
+        fontFamily?: string;
+        fontWeight?: string | number;
+        fontStyle?: string;
+        fontSize?: number;
+        textAlign?: "left" | "center" | "right";
+        letterSpacing?: number;
+        lineHeight?: number;
+        // Text content
+        text?: string;
+        // Shadow (box-shadow / text-shadow)
+        boxShadow?: string;
+        textShadow?: string;
+        // Stroke (WebkitTextStroke)
+        WebkitTextStroke?: string;
     };
 }
 
@@ -58,7 +87,33 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
                         backgroundColor: { type: "solid", value: randomHexColor() },
                     },
                 },
-            }
+            },
+            circle: {
+                config: {
+                    size: { width: 100, height: 100 },
+                    position: { x: 0, y: 0 },
+                    style: {
+                        backgroundColor: { type: "solid", value: randomHexColor() },
+                        borderRadius: 50,
+                    },
+                },
+            },
+            text: {
+                config: {
+                    size: { width: 200, height: 50 },
+                    position: { x: 0, y: 0 },
+                    style: {
+                        text: "Texto",
+                        fontFamily: "Inter",
+                        fontWeight: 400,
+                        fontSize: 24,
+                        color: "#000000",
+                        textAlign: "left",
+                        letterSpacing: 0,
+                        lineHeight: 1.2,
+                    },
+                },
+            },
         }
 
 

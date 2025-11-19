@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Paintbrush } from "lucide-react";
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, memo, use } from "react";
 import { HexAlphaColorPicker } from "react-colorful";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -34,6 +34,10 @@ const ColorPickerComponent = ({
     }
   }, [background, isOpen]);
 
+  useEffect(() => {
+    setCustomColor(background);
+  }, [background]);
+
   // Força sincronização quando o popover abre
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -57,6 +61,8 @@ const ColorPickerComponent = ({
     setCustomColor(hexColor);
     setBackground?.(hexColor);
   };
+
+  console.log("Renderizando ColorPicker com background:", background);
 
   return (
     <TooltipProvider>
@@ -90,7 +96,6 @@ const ColorPickerComponent = ({
                 ) : (
                   "Escolher cor"
                 )}
-                oi
               </div>
             </div>
           </Button>

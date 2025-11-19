@@ -1,23 +1,48 @@
+import { Background } from "@/components/art-background";
 import { FloatingMenuItem } from "@/components/floating-menu/floating-menu-item";
 import { ShapeControls } from "@/components/shape-controls";
 import { useCanvasStore, type ElementConfig, type ElementsProps } from "@/stores/canva-store";
 import { Button } from "@creative-ds/ui";
 import { PlusIcon, ShapesIcon, TextTIcon } from "@phosphor-icons/react";
 import { CircleIcon } from "lucide-react";
-import { useEffect } from "react";
-
+import { useEffect, useRef } from "react";
+import { BackgroundController } from "../controllers/background-controller";
+import bgColorSvg from '@/assets/bg-color.svg';
+import { TextElement } from "./text-element";
 
 interface ElemetsComponentProps {
     selectedIds?: string[];
+    editingTextId?: string | null;
+    onEditEnd?: () => void;
 }
 
 interface ElementProps {
     element: ElementsProps;
+    isEditing?: boolean;
+    onEditEnd?: () => void;
+    onTextChange?: (text: string) => void;
 }
 
-const Element = ({ element }: ElementProps) => {
+const Element = ({ element, isEditing, onEditEnd, onTextChange }: ElementProps) => {
+
+    const ref = useRef<HTMLDivElement>(null);
 
     if (!element) return null
+
+    if (element.type === "text") {
+        return (
+            <TextElement
+                el={element}
+                editing={isEditing || false}
+                editableRef={ref}
+                onEditEnd={onEditEnd}
+                onTextChange={onTextChange}
+            />
+        );
+    }
+
+
+
 
     return (
         <div
@@ -42,15 +67,20 @@ const Element = ({ element }: ElementProps) => {
 
 }
 
-export const Elements = ({ selectedIds }: ElemetsComponentProps) => {
+export const Elements = ({ selectedIds, editingTextId, onEditEnd }: ElemetsComponentProps) => {
     const elements = useCanvasStore((state) => state.elements);
     const setSelected = useCanvasStore((state) => state.setSelected);
+    const updateElementConfig = useCanvasStore((state) => state.updateElementConfig);
 
     useEffect(() => {
         setSelected(elements.filter(el => selectedIds?.includes(el.id)));
     }, [selectedIds]);
 
-
+    const handleTextChange = (elementId: string, text: string) => {
+        updateElementConfig?.(elementId, {
+            style: { text }
+        });
+    };
 
     return <>
         <div className="elements selecto-area gap-2 ">
@@ -60,9 +90,22 @@ export const Elements = ({ selectedIds }: ElemetsComponentProps) => {
                 return (
                     <div
                         data-element-id={element.id}
-                        className="cube absolute group size-30 bg-blue-300" key={element.id}>
+                        className="cube absolute group size-30 "
+                        key={element.id}
+                        style={{
+                            borderRadius: element.config.style.borderRadius
+                                ? `${element.config.style.borderRadius}px`
+                                : undefined,
+                            clipPath: element.config.style.clipPath || undefined,
+                        }}
+                    >
 
-                        <Element element={element} />
+                        <Element
+                            element={element}
+                            isEditing={editingTextId === element.id}
+                            onEditEnd={onEditEnd}
+                            onTextChange={(text) => handleTextChange(element.id, text)}
+                        />
                     </div>
                 )
             })}
@@ -77,16 +120,17 @@ export const Menu = () => {
     const addElement = useCanvasStore((s) => s.addElement);
 
     const selectedElements = useCanvasStore((s) => s.selected);
+    const bgSlected = useCanvasStore((s) => s.bgSlected);
 
     return (
         <div
 
             data-slot="floating-menu-content"
-
-            className="flex gap-2 absolute top-0 left-0 bg-background z-9999  w-full">
+            className="flex flex-col  gap-2  z-9999">
             <FloatingMenuItem
                 contentTitle="Adicionar Objetos"
-                trigger={<PlusIcon />}
+                trigger={<PlusIcon weight="bold" />}
+                variant="primary"
                 menuContent={
                     <div className=" space-y-2 max-h-[500px] overflow-y-auto [&>div]:w-full [&>div>button>span]:flex">
                         <Button
@@ -128,10 +172,19 @@ export const Menu = () => {
 
             <FloatingMenuItem
                 contentTitle="Controles de Elemento"
-                trigger={<ShapesIcon />}
+                trigger={<ShapesIcon weight="bold" />}
                 menuContent={<ShapeControls />}
                 open={selectedElements.length > 0 ? selectedElements.find(e => e.type === 'rectangle') !== undefined : false}
             />
+
+
+            <FloatingMenuItem
+                contentTitle="Controles de Background"
+                trigger={<img src={bgColorSvg} className="size-4.5 " />}
+                menuContent={<BackgroundController />}
+                open={bgSlected}
+            />
+
 
         </div>
     )

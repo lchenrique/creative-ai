@@ -42,8 +42,8 @@ const angleToCoords = (angle: number, width: number, height: number) => {
 
 
 export const GradientPreview = ({ value, onChange, minimal = false }: GradientPreviewProps) => {
-    const width = 320;
-    const height = 200;
+    const width = 316;
+    const height = 150;
 
     const [type, setType] = useState<"linear" | "radial">("linear");
     const [stops, setStops] = useState([
@@ -70,7 +70,7 @@ export const GradientPreview = ({ value, onChange, minimal = false }: GradientPr
                 setPoint2Pos({ x: clamp(coords.x2, width), y: clamp(coords.y2, height) });
             }
         }
-    }, [value]);
+    }, []);
 
     // Generate CSS string from current state
     const generateGradientCSS = () => {
@@ -155,12 +155,13 @@ export const GradientPreview = ({ value, onChange, minimal = false }: GradientPr
             <div className="relative" style={{ width, height }}>
 
                 <div
+                    className="rounded-lg"
                     style={{
                         width,
                         height,
                         backgroundImage: generateGradientCSS(),
                         backgroundSize: "100% 100%",
-                        backgroundOrigin: "content-box" 
+                        backgroundOrigin: "content-box"
                     }}
                 />
 
@@ -203,7 +204,7 @@ export const GradientPreview = ({ value, onChange, minimal = false }: GradientPr
             </div>
             {!minimal && (
                 <>
-                    <ToggleGroup type="single" size="sm" className="bg-background w-full"  >
+                    <ToggleGroup type="single" size="sm" className="bg-background w-full mt-4"  >
                         <ToggleGroupItem
                             className="flex-1"
                             value="linear"
@@ -238,13 +239,7 @@ export const GradientPreview = ({ value, onChange, minimal = false }: GradientPr
                             }}
                         />
                     </div>
-                    <div className="flex flex-col mt-4">
-                        <span> {"1:"} {point1Pos.x},{point1Pos.y}{" "}</span>
-                        <span>{"2:"} {point2Pos.x},{point2Pos.y}{" "}</span>
-                        <span>{"offset1:"} {percentage1}%</span>
-                        <span>{"offset2:"} {percentage2}%</span>
-                        {/* LINE BETWEEN POINTS */}
-                    </div>
+
                     <div className="grid grid-cols-3 gap-2 mt-4">
                         {GRADIENT_PRESETS.map((preset, index) => (
                             <div

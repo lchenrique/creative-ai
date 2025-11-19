@@ -5,7 +5,7 @@ export interface GradientTabProps extends GradientPreviewProps { }
 
 export const GradientTab = ({ value, onChange }: GradientTabProps) => {
 
-  return <TabsContent value="gradient" className="mt-4 outline-none">
+  return <TabsContent value="gradient" className="mt-4 outline-none overflow-hidden">
     <GradientPreview
       value={value}
       onChange={onChange}

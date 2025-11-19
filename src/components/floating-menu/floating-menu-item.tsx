@@ -1,4 +1,4 @@
-import { Button } from "@creative-ds/ui";
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -7,22 +7,25 @@ export interface FloatingMenuItemProps {
   menuContent: React.ReactNode;
   contentTitle?: string;
   open?: boolean;
+  variant?: "primary" | "secondary" | "outline" | "destructive";
 }
 
 export interface FloatingButtonTriggerProps {
   children: React.ReactNode;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  variant?: "primary" | "secondary" | "outline" | "destructive";
 }
 
 const FloatingButtonTrigger = ({
   children,
   onClick,
+  variant,
 }: FloatingButtonTriggerProps) => {
   return (
     <Button
       data-slot="floating-button-trigger"
-      className="size-8 p-0"
-      variant="outline"
+      className="size-10 p-0 rounded-full text-lg"
+      variant={variant === "primary" ? "default" : "outline"}
       onClick={onClick}
     >
       {children}
@@ -66,7 +69,8 @@ export const FloatingMenuItem = ({
   trigger,
   menuContent,
   contentTitle,
-  open
+  open,
+  variant,
 }: FloatingMenuItemProps) => {
   const [isOpen, setIsOpen] = useState(open || false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -83,6 +87,8 @@ export const FloatingMenuItem = ({
       } else {
         setIsOpen(true);
       }
+    } else {
+      setIsOpen(false);
     }
 
   }, [open]);
@@ -141,7 +147,7 @@ export const FloatingMenuItem = ({
 
   return (
     <>
-      <FloatingButtonTrigger onClick={toggleOpen}>
+      <FloatingButtonTrigger onClick={toggleOpen} variant={variant || "outline"}>
         {trigger}
       </FloatingButtonTrigger>
 

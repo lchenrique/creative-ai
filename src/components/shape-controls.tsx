@@ -1,33 +1,7 @@
 "use client";
 
-import {
-  INITIAL_COLOR_CONFIG,
-  useCreativeStore,
-  type BlendMode,
-} from "@/stores/creative-store";
-import {
-  PanelsRightBottom as AlignBottom,
-  AlignCenter,
-  AlignLeft,
-  AlignRight as AlignMiddle,
-  AlignRight,
-  AlignLeft as AlignTop,
-  Minus,
-  Plus,
-  RotateCcw,
-  RotateCw,
-  Palette,
-  Droplet,
-  Circle,
-  Layers,
-} from "lucide-react";
-import GradientControl from "./gradient-control";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Slider } from "./ui/slider";
-import { replaceColorInSVG } from "@/lib/svg-color-utils";
-import { ColorPicker } from "./color-picker";
 import { useCanvasStore } from "@/stores/canva-store";
+import GradientControl from "./gradient-control";
 
 export const ShapeControls = () => {
   const selecteds = useCanvasStore((state) => state.selected);
@@ -49,8 +23,6 @@ export const ShapeControls = () => {
             }}
             setColorConfig={(type, value) => {
               selecteds.forEach((el) => {
-
-
                 updateElementConfig?.((el?.id || "") as string, {
                   style: {
                     backgroundColor: {

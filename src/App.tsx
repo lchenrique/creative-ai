@@ -1,5 +1,4 @@
 import "./global.css";
-import "@creative-ds/ui/styles.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
 import { AuthPage } from "./pages/auth";
@@ -43,7 +42,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <div className="container mx-auto border">
+
+          <AppRoutes />
+        </div>
+
       </AuthProvider>
     </BrowserRouter>
   );

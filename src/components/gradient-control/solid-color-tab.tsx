@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { ColorPicker } from "@/components/color-picker";
 import type { ColorConfig } from "@/stores/canva-store";
+import { HexAlphaColorPicker } from "react-colorful";
 
 interface SolidColorTabProps {
   colorConfig: ColorConfig;
@@ -27,19 +28,22 @@ export const SolidColorTab = ({
   colorConfig,
   setColorConfig,
 }: SolidColorTabProps) => (
-  <TabsContent value="solid" className="space-y-3 pt-3">
+  <TabsContent value="solid" className="space-y-3 pt-3 overflow-hidden">
     {/* Seletor de Cor Principal com ColorPicker */}
     <div
-      data-slot="floating-menu-content"
+      data-slot="floating-menu-content overflow-hidden "
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <ColorPicker
-        background={colorConfig.value}
-        setBackground={(color) =>
-          setColorConfig(color)
-        }
+      <HexAlphaColorPicker
+        color={colorConfig.value}
+        onChange={(color) => setColorConfig(color)}
+        className="w-full"
+        style={{
+          width: "100%",
+          height: "250px",
+        }}
       />
     </div>
 

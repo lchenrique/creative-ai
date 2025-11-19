@@ -2,7 +2,9 @@ import { patternAnimations } from "@/data/pattern-animations";
 import { PATTERN_DEFAULTS } from "@/lib/pattern-utils";
 import { generateBackgroundCSS, generateCoverClass } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useCanvasStore } from "@/stores/canva-store";
 import { useCreativeStore } from "@/stores/creative-store";
+import { useEffect } from "react";
 // Função para extrair cor hex de qualquer formato (hex, rgb, rgba, gradiente)
 const extractHexColor = (colorString: string): string => {
   // Se já é hex, retornar
@@ -91,121 +93,57 @@ export const generateComplementaryColor = (
 };
 
 export function Background() {
-  const background = useCreativeStore((state) => state.background);
-  const currentBackgroundCSS = generateBackgroundCSS(background);
-  const currentBackgroundClass = generateCoverClass(background);
-  const isPattern = background.colorType === "pattern" && background.pattern;
-  const backgroundAnimation = false; // Criativos não têm animação por padrão
-  const patternCSSColor = background.solidColor || "#ffffff";
+  const backgroundColorConfig = useCanvasStore((state) => state.canvasBgColorConfig);
+  const setBgSlected = useCanvasStore((state) => state.setBgSlected);
+  const bgSlected = useCanvasStore((state) => state.bgSlected);
+  // const currentBackgroundClass = generateCoverClass(backgroundColorConfig);
 
-  const backgroundDefaultStyle = `
-        .${currentBackgroundClass}:not(.no-animation .${currentBackgroundClass}, .${currentBackgroundClass}.preview):before {
-            --animation-name: ${backgroundAnimation && backgroundAnimation && currentBackgroundClass ? patternAnimations[currentBackgroundClass] : "none"}
-        }
-    `;
 
-  let patternBgStyle = {};
-  if (
-    background.colorType === "pattern" &&
-    background.pattern &&
-    PATTERN_DEFAULTS[background.pattern]
-  ) {
-    // Usar a cor sólida como base para gerar cores complementares
-    const baseColor = patternCSSColor;
-
-    patternBgStyle = Object.entries(PATTERN_DEFAULTS[background.pattern])
-      .map(([key, _value]) => {
-        const cMap: Record<string, number> = {
-          "--c1": 0.8,
-          "--c2": 0.5,
-          "--c3": 1.2,
-          "--c4": 1.5,
-        };
-
-        return {
-          [key]: generateComplementaryColor(baseColor, cMap[key] || 0.5),
-        };
-      })
-      .reduce((acc, curr) => {
-        return { ...acc, ...curr };
-      }, {});
+  const handleBgClick = () => {
+    setBgSlected?.(true);
   }
 
-  if (background.colorType === "image") {
-    return (
-      <>
-        <img
-          className="absolute object-cover"
-          style={{
-            width: "600px",
-            height: "600px",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-          src={background.image || ""}
-        />
-      </>
-    );
-  }
+  //cliclk outside to deselect
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-bg-selected="true"]') || !target.closest('[data-slot="floating-menu-content"]')) {
+        setBgSlected?.(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
 
-  if (background.colorType === "video" && background.video) {
-    return (
-      <>
-        <video
-          className="absolute z-0 object-cover"
-          style={{
-            width: "600px",
-            height: "600px",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-          src={background.video}
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-      </>
-    );
-  }
+  }, [setBgSlected, bgSlected]);
 
   return (
-    <div>
-      <style>
-        {backgroundDefaultStyle}
-        {`
-                .pattern-bg {
-                    ${Object.entries(patternBgStyle)
-                      .map(([key, value]) => `${key}: ${value} !important;`)
-                      .join("\n")}
-                }
-                `}
-      </style>
-      <div
-        className={cn("absolute", currentBackgroundClass, "pattern-bg")}
-        style={{
-          width: "560px",
-          height: "960px",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          ...(!isPattern
-            ? {
-                background: currentBackgroundCSS,
-                transition: "background 0.3s ease-in-out",
-              }
-            : {
-                animation:
-                  backgroundAnimation &&
-                  backgroundAnimation &&
-                  currentBackgroundClass
-                    ? patternAnimations[currentBackgroundClass]
-                    : "none",
-              }),
-        }}
-      />
-    </div>
+    <div
+      className={cn(
+        "absolute border bg-selected",
+        "data-bg-selected:border-blue-500",
+        "hover:border-blue-300",
+        "bg-background", "z-0")}
+      onClick={handleBgClick}
+      data-bg-selected={bgSlected || undefined}
+      style={{
+        width: "450px",
+        height: "800px",
+        left: 0,
+        top: 0,
+        backgroundImage: backgroundColorConfig?.type === "gradient"
+          ? backgroundColorConfig?.value
+          : undefined,
+        backgroundColor: backgroundColorConfig?.type === "solid"
+          ? backgroundColorConfig?.value
+          : undefined,
+        backgroundSize: backgroundColorConfig?.type === "gradient"
+          ? "100% 100%"
+          : "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundOrigin: "content-box",
+      }}
+    />
   );
 }
