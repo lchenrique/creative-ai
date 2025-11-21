@@ -27,44 +27,48 @@ const SOLIDS_PRESETS = [
 export const SolidColorTab = ({
   colorConfig,
   setColorConfig,
-}: SolidColorTabProps) => (
-  <TabsContent value="solid" className="space-y-3 pt-3 overflow-hidden">
-    {/* Seletor de Cor Principal com ColorPicker */}
-    <div
-      data-slot="floating-menu-content overflow-hidden "
-      onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      <HexAlphaColorPicker
-        color={colorConfig.value}
-        onChange={(color) => setColorConfig(color)}
-        className="w-full"
-        style={{
-          width: "100%",
-          height: "250px",
-        }}
-      />
-    </div>
+}: SolidColorTabProps) => {
+  // Se o colorConfig for gradient, usar cor padrão
+  const currentColor =
+    colorConfig.type === "solid" ? colorConfig.value : "#ffffff";
 
-    {/* Presets de Cor Sólida */}
-    <div className="grid grid-cols-6 gap-2">
-      {SOLIDS_PRESETS.map((color, index) => (
-        <Button
-          key={index}
-          data-slot="floating-menu-content"
-          variant="ghost"
-          className="h-8 w-full p-0 overflow-hidden border hover:border-accent"
-          onClick={() =>
-            setColorConfig(color)
-          }
-        >
-          <div
-            className="w-full h-full rounded-sm"
-            style={{ background: color }}
-          />
-        </Button>
-      ))}
-    </div>
-  </TabsContent>
-);
+  return (
+    <TabsContent value="solid" className="space-y-3 pt-3 overflow-hidden">
+      {/* Seletor de Cor Principal com ColorPicker */}
+      <div
+        data-slot="floating-menu-content overflow-hidden "
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <HexAlphaColorPicker
+          color={currentColor}
+          onChange={(color) => setColorConfig(color)}
+          className="w-full"
+          style={{
+            width: "100%",
+            height: "250px",
+          }}
+        />
+      </div>
+
+      {/* Presets de Cor Sólida */}
+      <div className="grid grid-cols-6 gap-2">
+        {SOLIDS_PRESETS.map((color, index) => (
+          <Button
+            key={index}
+            data-slot="floating-menu-content"
+            variant="ghost"
+            className="h-8 w-full p-0 overflow-hidden border hover:border-accent"
+            onClick={() => setColorConfig(color)}
+          >
+            <div
+              className="w-full h-full rounded-sm"
+              style={{ background: color }}
+            />
+          </Button>
+        ))}
+      </div>
+    </TabsContent>
+  );
+};

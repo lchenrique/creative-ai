@@ -18,60 +18,13 @@ const ColorPickerComponent = ({
   setBackground,
   disabled = false,
 }: ColorPickerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [customColor, setCustomColor] = useState(background || "#ffffff");
-  const isChangingColor = useRef(false);
-
-  // Atualiza customColor apenas quando background muda externamente (não durante drag)
-  useEffect(() => {
-    if (!isChangingColor.current && !isOpen) {
-      const isValidHex = /^#([0-9A-F]{3}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(
-        background,
-      );
-      if (isValidHex) {
-        setCustomColor(background);
-      }
-    }
-  }, [background, isOpen]);
-
-  useEffect(() => {
-    setCustomColor(background);
-  }, [background]);
-
-  // Força sincronização quando o popover abre
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open) {
-      // Quando abre, força sincronização com o background atual
-      const isValidHex = /^#([0-9A-F]{3}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(
-        background,
-      );
-      if (isValidHex) {
-        setCustomColor(background);
-      }
-    }
-    // Reset flag quando fecha
-    if (!open) {
-      isChangingColor.current = false;
-    }
-  };
-
   const handleColorChange = (hexColor: string) => {
-    isChangingColor.current = true;
-    setCustomColor(hexColor);
     setBackground?.(hexColor);
   };
 
-  console.log("Renderizando ColorPicker com background:", background);
-
   return (
     <TooltipProvider>
-      <Popover
-        data-slot="floating-menu-content"
-        open={isOpen}
-        onOpenChange={handleOpenChange}
-        modal={true}
-      >
+      <Popover modal={true}>
         <PopoverTrigger disabled={disabled} asChild>
           <Button
             variant="outline"
@@ -109,7 +62,7 @@ const ColorPickerComponent = ({
           onMouseDown={(e) => e.stopPropagation()}
         >
           <HexAlphaColorPicker
-            color={customColor}
+            color={background || "#ffffff"}
             onChange={handleColorChange}
             className="w-full"
             style={{
@@ -119,7 +72,7 @@ const ColorPickerComponent = ({
           />
           <Input
             type="text"
-            value={customColor}
+            value={background || "#ffffff"}
             onChange={(e) => handleColorChange(e.target.value)}
             className="w-full"
           />

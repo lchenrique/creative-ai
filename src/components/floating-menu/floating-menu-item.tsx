@@ -90,8 +90,7 @@ export const FloatingMenuItem = ({
     } else {
       setIsOpen(false);
     }
-
-  }, [open]);
+  }, [open, shouldRender  ]);
 
   const toggleOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -141,13 +140,15 @@ export const FloatingMenuItem = ({
       window.removeEventListener("floating-menu-open", handleOtherMenuOpen);
   }, []);
 
-
   const canvasRoot = document.getElementById("canvas-editor");
   if (!canvasRoot) return null;
 
   return (
     <>
-      <FloatingButtonTrigger onClick={toggleOpen} variant={variant || "outline"}>
+      <FloatingButtonTrigger
+        onClick={toggleOpen}
+        variant={variant || "outline"}
+      >
         {trigger}
       </FloatingButtonTrigger>
 

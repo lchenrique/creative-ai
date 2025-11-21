@@ -4,7 +4,8 @@ import { generateBackgroundCSS, generateCoverClass } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useCanvasStore } from "@/stores/canva-store";
 import { useCreativeStore } from "@/stores/creative-store";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { colorConfigToCss } from "@/lib/gradient-utils";
 // Função para extrair cor hex de qualquer formato (hex, rgb, rgba, gradiente)
 const extractHexColor = (colorString: string): string => {
   // Se já é hex, retornar
@@ -93,30 +94,31 @@ export const generateComplementaryColor = (
 };
 
 export function Background() {
-  const backgroundColorConfig = useCanvasStore((state) => state.canvasBgColorConfig);
+  const backgroundColorConfig = useCanvasStore((state) => state.canvasBgColor);
   const setBgSlected = useCanvasStore((state) => state.setBgSlected);
   const bgSlected = useCanvasStore((state) => state.bgSlected);
-  // const currentBackgroundClass = generateCoverClass(backgroundColorConfig);
 
-
-  const handleBgClick = () => {
+  const handleBgClick = useCallback(() => {
     setBgSlected?.(true);
-  }
+  }, [setBgSlected]);
 
   //cliclk outside to deselect
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('[data-bg-selected="true"]') || !target.closest('[data-slot="floating-menu-content"]')) {
-        setBgSlected?.(false);
-      }
+      // if (!target.closest('[data-bg-selected="true"]') || !target.closest('[data-slot="floating-menu-content"]')) {
+      //   setBgSlected?.(false);
+      // }
     };
     document.addEventListener("click", handleClickOutside);
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-
   }, [setBgSlected, bgSlected]);
+
+  const cssBackground = backgroundColorConfig
+    ? colorConfigToCss(backgroundColorConfig, 450, 800)
+    : undefined;
 
   return (
     <div
@@ -124,25 +126,18 @@ export function Background() {
         "absolute border bg-selected",
         "data-bg-selected:border-blue-500",
         "hover:border-blue-300",
-        "bg-background", "z-0")}
+        "bg-background",
+        "z-0",
+      )}
       onClick={handleBgClick}
       data-bg-selected={bgSlected || undefined}
+      data-canvas-background="true"
       style={{
         width: "450px",
         height: "800px",
         left: 0,
         top: 0,
-        backgroundImage: backgroundColorConfig?.type === "gradient"
-          ? backgroundColorConfig?.value
-          : undefined,
-        backgroundColor: backgroundColorConfig?.type === "solid"
-          ? backgroundColorConfig?.value
-          : undefined,
-        backgroundSize: backgroundColorConfig?.type === "gradient"
-          ? "100% 100%"
-          : "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundOrigin: "content-box",
+        background: cssBackground,
       }}
     />
   );

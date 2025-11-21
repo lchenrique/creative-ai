@@ -444,7 +444,7 @@ export function PathEditor({
                             y={point.y - halfSizeY}
                             width={pointSizeX}
                             height={pointSizeY}
-                            fill={selectedPointId === point.id ? 'var(--primary)' : 'var(--background)'}
+                            fill={selectedPointId === point.id ? 'var(--primary))' : 'var(--background)'}
                             stroke="var(--accent)"
                             strokeWidth="1"
                             vectorEffect="non-scaling-stroke"

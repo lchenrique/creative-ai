@@ -1,11 +1,44 @@
 "use client";
 
 import { useCanvasStore } from "@/stores/canva-store";
+import { useEffect, useState, useRef } from "react";
 import GradientControl from "./gradient-control";
+import type { ColorConfig } from "@/stores/canva-store";
 
 export const ShapeControls = () => {
-  const selecteds = useCanvasStore((state) => state.selected);
-  const updateElementConfig = useCanvasStore((state) => state.updateElementConfig);
+  const selectedIds = useCanvasStore((state) => state.selectedIds);
+  const updateElementConfig = useCanvasStore(
+    (state) => state.updateElementConfig,
+  );
+
+  // Estado local para o ColorConfig
+  const [currentColorConfig, setCurrentColorConfig] = useState<ColorConfig>({
+    type: "solid",
+    value: "#FFFFFF",
+  });
+
+  // Ref para guardar o ID atual sem causar re-render
+  const currentIdRef = useRef<string | null>(null);
+
+  // Sincroniza o estado local APENAS quando mudar o ID selecionado
+  useEffect(() => {
+    const selectedId = selectedIds[0];
+
+    if (selectedId && selectedId !== currentIdRef.current) {
+      // Mudou o elemento selecionado - pega fresh data direto da store
+      const freshElement = useCanvasStore
+        .getState()
+        .elements.find((el) => el.id === selectedId);
+      if (freshElement?.config.style.backgroundColor) {
+        setCurrentColorConfig(freshElement.config.style.backgroundColor);
+      }
+      currentIdRef.current = selectedId;
+    } else if (!selectedId) {
+      // Nenhum elemento selecionado - reseta
+      currentIdRef.current = null;
+    }
+  }, [selectedIds[0]]);
+
   return (
     <div
       data-slot="floating-menu-content"
@@ -17,22 +50,19 @@ export const ShapeControls = () => {
         <div className="flex flex-col gap-2">
           <GradientControl
             label="Cor de Fundo"
-            colorConfig={selecteds[0]?.config.style.backgroundColor || {
-              type: "solid",
-              value: "#FFFFFF",
-            }}
-            setColorConfig={(type, value) => {
-              selecteds.forEach((el) => {
-                updateElementConfig?.((el?.id || "") as string, {
-                  style: {
-                    backgroundColor: {
-                      type,
-                      value,
-                    },
-                  },
-                })
-              });
+            colorConfig={currentColorConfig}
+            setColorConfig={(newConfig) => {
+              // Atualiza o estado local
+              setCurrentColorConfig(newConfig);
 
+              // Atualiza todos os elementos selecionados
+              selectedIds.forEach((id) => {
+                updateElementConfig?.(id, {
+                  style: {
+                    backgroundColor: newConfig,
+                  },
+                });
+              });
             }}
           />
         </div>

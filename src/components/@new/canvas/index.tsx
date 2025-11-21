@@ -9,385 +9,657 @@ import { Elements, Menu } from "./elements/elements";
 import { useCanvasStore } from "@/stores/canva-store";
 import { Editable } from "./editable-able";
 import { PathEditorAble } from "./path-editor-able";
-import { PathEditor } from "./path-editor";
+import { ClipPathEditor } from "./path-editor/path-editor";
+import { Background } from "@/components/art-background";
 
 export default function Canvas() {
-    const groupManager = React.useMemo<GroupManager>(() => new GroupManager([]), []);
-    const [targets, setTargets] = React.useState<MoveableTargetGroupsType>([]);
-    const moveableRef = React.useRef<Moveable>(null);
-    const selectoRef = React.useRef<Selecto>(null);
-    const [elementGuidelines, setElementGuidelines] = React.useState<HTMLElement[]>([]);
-    const [selectedIds, setSelectedIds] = React.useState<string[]>()
+  const groupManager = React.useMemo<GroupManager>(
+    () => new GroupManager([]),
+    [],
+  );
+  const [targets, setTargets] = React.useState<MoveableTargetGroupsType>([]);
+  const moveableRef = React.useRef<Moveable>(null);
+  const selectoRef = React.useRef<Selecto>(null);
+  const [elementGuidelines, setElementGuidelines] = React.useState<
+    HTMLElement[]
+  >([]);
+  // Store
+  const updateElementConfig = useCanvasStore(
+    (state) => state.updateElementConfig,
+  );
+  const elements = useCanvasStore((state) => state.elements);
+  const removeElement = useCanvasStore((state) => state.removeElement);
+  const setBgSlected = useCanvasStore((state) => state.setBgSlected);
+  const selectedIds = useCanvasStore((state) => state.selectedIds);
+  const setSelectedIds = useCanvasStore((state) => state.setSelectedIds);
 
-    // Store
-    const updateElementConfig = useCanvasStore((state) => state.updateElementConfig);
-    const elements = useCanvasStore((state) => state.elements);
-    const removeElement = useCanvasStore((state) => state.removeElement);
+  // Clippable mode state
+  const [clippableId, setClippableId] = React.useState<string | null>(null);
 
-    // Clippable mode state
-    const [clippableId, setClippableId] = React.useState<string | null>(null);
+  // Get clipPath and pathPoints for current clippable element
+  const currentClipPath = React.useMemo(() => {
+    if (!clippableId) return undefined;
+    const element = elements.find((el) => el.id === clippableId);
+    return (
+      element?.config.style.clipPath ||
+      "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
+    );
+  }, [clippableId, elements]);
 
-    // Get clipPath for current clippable element
-    const currentClipPath = React.useMemo(() => {
-        if (!clippableId) return undefined;
-        const element = elements.find(el => el.id === clippableId);
-        // Default to polygon (4 corners)
-        return element?.config.style.clipPath || "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
-    }, [clippableId, elements]);
-    const setSelectedTargets = React.useCallback((nextTargetes: MoveableTargetGroupsType) => {
-        selectoRef.current!.setSelectedTargets(deepFlat(nextTargetes));
-        setTargets(nextTargetes);
+  const currentPathPoints = React.useMemo(() => {
+    if (!clippableId) return undefined;
+    const element = elements.find((el) => el.id === clippableId);
+    return element?.config.style.clipPathPoints;
+  }, [clippableId, elements]);
 
-    }, []);
+  // Get position and size of clippable element
+  const [clippableRect, setClippableRect] = React.useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
-    // Handle element deletion
-    const handleDeleteElement = useCallback((elementId: string) => {
-        if (removeElement) {
-            removeElement(elementId);
-            setSelectedTargets([]);
-            setSelectedIds([]);
+  // Helper function to get element rect relative to canvas
+  const getElementRect = React.useCallback((el: HTMLElement) => {
+    const canvas = document.querySelector(
+      '[style*="width: 450px"]',
+    ) as HTMLElement;
+    if (!canvas) return null;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+
+    return {
+      left: elRect.left - canvasRect.left,
+      top: elRect.top - canvasRect.top,
+      width: elRect.width,
+      height: elRect.height,
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!clippableId) {
+      setClippableRect(null);
+      return;
+    }
+    // Small delay to ensure DOM is updated
+    setTimeout(() => {
+      const el = document.querySelector(
+        `[data-element-id="${clippableId}"]`,
+      ) as HTMLElement;
+      if (el) {
+        const rect = getElementRect(el);
+        if (rect) setClippableRect(rect);
+      }
+    }, 0);
+  }, [clippableId, getElementRect]);
+  const setSelectedTargets = React.useCallback(
+    (nextTargetes: MoveableTargetGroupsType) => {
+      selectoRef.current!.setSelectedTargets(deepFlat(nextTargetes));
+      setTargets(nextTargetes);
+    },
+    [],
+  );
+
+  // Handle element deletion
+  const handleDeleteElement = useCallback(
+    (elementId: string) => {
+      if (removeElement) {
+        removeElement(elementId);
+        setSelectedTargets([]);
+        setSelectedIds([]);
+      }
+    },
+    [removeElement, setSelectedTargets],
+  );
+
+  React.useEffect(() => {
+    // [[0, 1], 2], 3, 4, [5, 6], 7, 8, 9
+    const elements = selectoRef.current!.getSelectableElements();
+
+    groupManager.set([], elements);
+  }, []);
+
+  // Keyboard delete handler
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      // Escape to exit clip mode
+      if (e.key === "Escape" && clippableId) {
+        e.preventDefault();
+        setClippableId(null);
+        return;
+      }
+
+      if (e.key === "Delete" && selectedIds && selectedIds.length > 0) {
+        e.preventDefault();
+        // Delete all selected elements
+        selectedIds.forEach((id) => {
+          if (removeElement) {
+            removeElement(id);
+          }
+        });
+        setSelectedTargets([]);
+        setSelectedIds([]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIds, removeElement, setSelectedTargets, clippableId]);
+
+  // Global double-click handler to exit clip mode
+  React.useEffect(() => {
+    if (!clippableId) return;
+
+    const handleDoubleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Ignore double-clicks on SVG elements (clip editor)
+      const tagName = target?.tagName?.toLowerCase();
+      const isClipEditorElement =
+        tagName === "svg" ||
+        tagName === "circle" ||
+        tagName === "path" ||
+        tagName === "line" ||
+        tagName === "rect" ||
+        tagName === "text";
+
+      if (!isClipEditorElement) {
+        setClippableId(null);
+      }
+    };
+
+    // Add listener after a small delay to avoid catching the double-click that activated clip mode
+    const timeoutId = setTimeout(() => {
+      window.addEventListener("dblclick", handleDoubleClick);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("dblclick", handleDoubleClick);
+    };
+  }, [clippableId]);
+
+  const onDragStart = useCallback(
+    (e: any) => {
+      const moveable = moveableRef.current!;
+      const target = e.inputEvent.target;
+      const flatted = deepFlat(targets);
+
+      // Verificar se há algum popover aberto (Radix usa portal)
+      const hasOpenPopover = document.querySelector(
+        "[data-radix-popper-content-wrapper]",
+      );
+
+      // Ignorar cliques em menus flutuantes, popovers e modais
+      if (
+        hasOpenPopover ||
+        target.closest('[data-slot="floating-menu-content"]') ||
+        target.closest("[data-radix-popper-content-wrapper]") ||
+        target.closest('[role="dialog"]') ||
+        target.closest(".react-colorful")
+      ) {
+        e.stop();
+        return;
+      }
+      if (
+        target.tagName === "BUTTON" ||
+        moveable.isMoveableElement(target) ||
+        flatted.some((t) => t === target || t.contains(target))
+      ) {
+        e.stop();
+      }
+      e.data.startTargets = targets;
+    },
+    [targets],
+  );
+
+  const onClickGroup = useCallback(
+    (e: any) => {
+      // When in clip mode, handle exit conditions
+      if (clippableId) {
+        const target = e.inputEvent?.target as HTMLElement;
+        // Ignore clicks on SVG elements (clip editor)
+        const tagName = target?.tagName?.toLowerCase();
+        const isClipEditorElement =
+          tagName === "svg" ||
+          tagName === "circle" ||
+          tagName === "path" ||
+          tagName === "line" ||
+          tagName === "rect" ||
+          tagName === "text";
+
+        if (isClipEditorElement) {
+          return;
         }
-    }, [removeElement, setSelectedTargets]);
 
-    React.useEffect(() => {
-        // [[0, 1], 2], 3, 4, [5, 6], 7, 8, 9
-        const elements = selectoRef.current!.getSelectableElements();
-
-        groupManager.set([], elements);
-    }, []);
-
-    // Keyboard delete handler
-    React.useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if typing in input/textarea
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-                return;
-            }
-
-            if (e.key === "Delete" && selectedIds && selectedIds.length > 0) {
-                e.preventDefault();
-                // Delete all selected elements
-                selectedIds.forEach(id => {
-                    if (removeElement) {
-                        removeElement(id);
-                    }
-                });
-                setSelectedTargets([]);
-                setSelectedIds([]);
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [selectedIds, removeElement, setSelectedTargets]);
-
-    const onDragStart = useCallback((e: any) => {
-        const moveable = moveableRef.current!;
-        const target = e.inputEvent.target;
-        const flatted = deepFlat(targets);
-
-        // Verificar se há algum popover aberto (Radix usa portal)
-        const hasOpenPopover = document.querySelector('[data-radix-popper-content-wrapper]');
-
-        // Ignorar cliques em menus flutuantes, popovers e modais
-        if (
-            hasOpenPopover ||
-            target.closest('[data-slot="floating-menu-content"]') ||
-            target.closest('[data-radix-popper-content-wrapper]') ||
-            target.closest('[role="dialog"]') ||
-            target.closest('.react-colorful')
-        ) {
-            e.stop();
-            return;
-        }
-        if (
-            target.tagName === "BUTTON"
-            || moveable.isMoveableElement(target)
-            || flatted.some(t => t === target || t.contains(target))
-        ) {
-            e.stop();
-        }
-        e.data.startTargets = targets;
-    }, [targets]);
-
-
-    const onClickGroup = useCallback((e: any) => {
-        if (!e.moveableTarget) {
-            // Double-click fora do item: desativa clippable
-            if (e.isDouble && clippableId) {
-                setClippableId(null);
-                return;
-            }
-            setSelectedTargets([]);
-            return;
-        }
+        // Double-click exits clip mode (outside or on any element)
         if (e.isDouble) {
-            const targetId = e.moveableTarget.getAttribute("data-element-id");
+          setClippableId(null);
+          return;
+        }
+        return;
+      }
 
-            // Se já está em modo clippable no mesmo item, adiciona ponto na linha
-            if (clippableId === targetId) {
-                // Pegar posição do clique relativa ao elemento
-                const rect = e.moveableTarget.getBoundingClientRect();
-                const x = ((e.inputEvent.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.inputEvent.clientY - rect.top) / rect.height) * 100;
+      if (!e.moveableTarget) {
+        setSelectedTargets([]);
+        return;
+      }
+      if (e.isDouble) {
+        const targetId = e.moveableTarget.getAttribute("data-element-id");
 
-                // Parse current polygon
-                const element = elements.find(el => el.id === clippableId);
-                const clipPath = element?.config.style.clipPath || "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+        // Se já está em modo clippable no mesmo item, adiciona ponto na linha
+        if (clippableId === targetId) {
+          // Pegar posição do clique relativa ao elemento
+          const rect = e.moveableTarget.getBoundingClientRect();
+          const x = ((e.inputEvent.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.inputEvent.clientY - rect.top) / rect.height) * 100;
 
-                // Extract points from polygon
-                const match = clipPath.match(/polygon\(([^)]+)\)/);
-                if (match) {
-                    const pointsStr = match[1];
-                    const points = pointsStr.split(',').map(p => p.trim());
+          // Parse current polygon
+          const element = elements.find((el) => el.id === clippableId);
+          const clipPath =
+            element?.config.style.clipPath ||
+            "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
 
-                    // Find the best edge to insert the new point
-                    const parsedPoints = points.map(p => {
-                        const [px, py] = p.split(' ').map(v => parseFloat(v));
-                        return { x: px, y: py };
-                    });
+          // Extract points from polygon
+          const match = clipPath.match(/polygon\(([^)]+)\)/);
+          if (match) {
+            const pointsStr = match[1];
+            const points = pointsStr.split(",").map((p) => p.trim());
 
-                    // Find closest edge
-                    let minDist = Infinity;
-                    let insertIndex = 0;
+            // Find the best edge to insert the new point
+            const parsedPoints = points.map((p) => {
+              const [px, py] = p.split(" ").map((v) => parseFloat(v));
+              return { x: px, y: py };
+            });
 
-                    for (let i = 0; i < parsedPoints.length; i++) {
-                        const p1 = parsedPoints[i];
-                        const p2 = parsedPoints[(i + 1) % parsedPoints.length];
+            // Find closest edge
+            let minDist = Infinity;
+            let insertIndex = 0;
 
-                        // Distance from point to line segment
-                        const dx = p2.x - p1.x;
-                        const dy = p2.y - p1.y;
-                        const t = Math.max(0, Math.min(1, ((x - p1.x) * dx + (y - p1.y) * dy) / (dx * dx + dy * dy)));
-                        const projX = p1.x + t * dx;
-                        const projY = p1.y + t * dy;
-                        const dist = Math.sqrt((x - projX) ** 2 + (y - projY) ** 2);
+            for (let i = 0; i < parsedPoints.length; i++) {
+              const p1 = parsedPoints[i];
+              const p2 = parsedPoints[(i + 1) % parsedPoints.length];
 
-                        if (dist < minDist) {
-                            minDist = dist;
-                            insertIndex = i + 1;
-                        }
-                    }
+              // Distance from point to line segment
+              const dx = p2.x - p1.x;
+              const dy = p2.y - p1.y;
+              const t = Math.max(
+                0,
+                Math.min(
+                  1,
+                  ((x - p1.x) * dx + (y - p1.y) * dy) / (dx * dx + dy * dy),
+                ),
+              );
+              const projX = p1.x + t * dx;
+              const projY = p1.y + t * dy;
+              const dist = Math.sqrt((x - projX) ** 2 + (y - projY) ** 2);
 
-                    // Tolerância em percentagem (aprox 10px em um elemento de 100px)
-                    const tolerance = 10;
+              if (dist < minDist) {
+                minDist = dist;
+                insertIndex = i + 1;
+              }
+            }
 
-                    // Só adiciona ponto se clicou próximo da linha
-                    if (minDist > tolerance) {
-                        return;
-                    }
+            // Tolerância em percentagem (aprox 10px em um elemento de 100px)
+            const tolerance = 10;
 
-                    // Insert new point
-                    parsedPoints.splice(insertIndex, 0, { x, y });
+            // Só adiciona ponto se clicou próximo da linha
+            if (minDist > tolerance) {
+              return;
+            }
 
-                    // Build new polygon
-                    const newPolygon = `polygon(${parsedPoints.map(p => `${p.x.toFixed(2)}% ${p.y.toFixed(2)}%`).join(', ')})`;
+            // Insert new point
+            parsedPoints.splice(insertIndex, 0, { x, y });
 
-                    // Update store
-                    if (updateElementConfig && clippableId) {
-                        updateElementConfig(clippableId, {
-                            style: { clipPath: newPolygon }
-                        });
-                    }
+            // Build new polygon
+            const newPolygon = `polygon(${parsedPoints.map((p) => `${p.x.toFixed(2)}% ${p.y.toFixed(2)}%`).join(", ")})`;
 
-                    // Apply to element
-                    e.moveableTarget.style.clipPath = newPolygon;
+            // Update store
+            if (updateElementConfig && clippableId) {
+              updateElementConfig(clippableId, {
+                style: { clipPath: newPolygon },
+              });
+            }
+
+            // Apply to element
+            e.moveableTarget.style.clipPath = newPolygon;
+          }
+          return;
+        }
+
+        // Se clicou duas vezes no item selecionado, ativa modo clippable
+        const flatted = deepFlat(targets);
+        const isCurrentlySelected = flatted.some((t) => t === e.moveableTarget);
+
+        if (isCurrentlySelected && flatted.length === 1) {
+          setClippableId(targetId);
+          return;
+        }
+
+        // Comportamento padrão para grupos
+        const childs = groupManager.selectSubChilds(targets, e.moveableTarget);
+        setSelectedTargets(childs.targets());
+        return;
+      }
+      if (e.isTrusted) {
+        selectoRef.current!.clickTarget(e.inputEvent, e.moveableTarget);
+      }
+    },
+    [groupManager, setSelectedTargets, targets, clippableId],
+  );
+
+  const onSelect = useCallback(
+    (e: any) => {
+      const { startAdded, startRemoved, isDragStartEnd } = e;
+      console.log("e:", e);
+      if (isDragStartEnd) {
+        return;
+      }
+      const nextChilds = groupManager.selectSameDepthChilds(
+        e.data.startTargets,
+        startAdded,
+        startRemoved,
+      );
+
+      setSelectedTargets(nextChilds.targets());
+    },
+    [groupManager, setSelectedTargets],
+  );
+
+  const onSelectEnd = useCallback(
+    (e: any) => {
+      // Ignore selection events when in clip mode
+      if (clippableId) {
+        return;
+      }
+
+      const { isDragStartEnd, inputEvent, selected } = e;
+      const target = inputEvent.target as HTMLElement;
+
+      // Verificar se há algum popover aberto (Radix usa portal)
+      const hasOpenPopover = document.querySelector(
+        "[data-radix-popper-content-wrapper]",
+      );
+
+      // Ignorar cliques em menus flutuantes, popovers e modais
+      if (
+        hasOpenPopover ||
+        target.closest('[data-slot="floating-menu-content"]') ||
+        target.closest("[data-radix-popper-content-wrapper]") ||
+        target.closest('[role="dialog"]') ||
+        target.closest(".react-colorful")
+      ) {
+        return;
+      }
+
+      // Check if clicked on background
+      if (
+        target.closest("[data-canvas-background]") ||
+        target.hasAttribute("data-canvas-background")
+      ) {
+        setBgSlected?.(true);
+        setSelectedTargets([]);
+        setSelectedIds([]);
+        return;
+      } else {
+        // Deselect background when clicking elsewhere
+        setBgSlected?.(false);
+      }
+
+      const moveable = moveableRef.current!;
+      if (isDragStartEnd) {
+        inputEvent.preventDefault();
+        moveable.waitToChangeTarget().then(() => {
+          moveable.dragStart(inputEvent);
+        });
+      }
+      e.currentTarget.setSelectedTargets(selected);
+      setSelectedTargets(selected);
+
+      const newSelectedIds = selected.map((el: any) =>
+        el.getAttribute("data-element-id"),
+      ) as string[];
+      setSelectedIds(newSelectedIds);
+
+      // Desativar clippable se selecionou outro item
+      if (clippableId && !newSelectedIds.includes(clippableId)) {
+        setClippableId(null);
+      }
+    },
+    [groupManager, setSelectedTargets, clippableId, setBgSlected],
+  );
+
+  const onClipPathChange = useCallback(
+    (newClipPath: string) => {
+      if (clippableId && updateElementConfig) {
+        updateElementConfig(clippableId, {
+          style: { clipPath: newClipPath },
+        });
+      }
+    },
+    [clippableId, updateElementConfig],
+  );
+
+  // Called when editor closes - saves final polygon version and pathPoints
+  const onClipPathClose = useCallback(
+    (
+      polygonClipPath: string,
+      pathPoints?: import("@/stores/canva-store").PathPoint[],
+    ) => {
+      if (clippableId && updateElementConfig) {
+        updateElementConfig(clippableId, {
+          style: {
+            clipPath: polygonClipPath,
+            clipPathPoints: pathPoints,
+          },
+        });
+      }
+    },
+    [clippableId, updateElementConfig],
+  );
+
+  return (
+    <div id="canvas-editor" className="root h-full">
+      <div className=" h-full w-full flex items-center justify-center">
+        <div style={{ width: 450, height: 800, position: "relative" }}>
+          <div>
+            <Background />
+          </div>
+          <Menu />
+
+          <Moveable
+            ref={moveableRef}
+            ables={[Editable]}
+            props={{
+              editable: true,
+              onDelete: handleDeleteElement,
+            }}
+            draggable={!clippableId}
+            rotatable={!clippableId}
+            // scalable={!clippableId}
+            resizable={!clippableId}
+            clippable={false}
+            dragWithClip={false}
+            target={targets}
+            snapThreshold={5}
+            snapRotationDegrees={Array.from({ length: 72 }, (_, i) => i * 5)}
+            onClickGroup={onClickGroup}
+            onClick={onClickGroup}
+            verticalGuidelines={[0, 112.5, 225, 337.5, 450]}
+            horizontalGuidelines={[0, 200, 400, 800]}
+            elementGuidelines={elementGuidelines}
+            snapDirections={canvasActions.snapDirections}
+            elementSnapDirections={canvasActions.elementSnapDirections}
+            onDrag={(e) => {
+              canvasActions.onDrag(e);
+              // Update clippableRect when dragging the clippable element
+              if (clippableId) {
+                const el = e.target as HTMLElement;
+                if (el.getAttribute("data-element-id") === clippableId) {
+                  const rect = getElementRect(el);
+                  if (rect) setClippableRect(rect);
                 }
-                return;
+              }
+            }}
+            onRenderGroup={canvasActions.onRenderGroup}
+            onResize={(e) => {
+              canvasActions.onResize(e);
+
+              // Save size to store during resize to prevent React from reverting
+              const el = e.target as HTMLElement;
+              const elementId = el.getAttribute("data-element-id");
+              if (elementId && updateElementConfig) {
+                updateElementConfig(elementId, {
+                  size: {
+                    width: e.width,
+                    height: e.height,
+                  },
+                });
+              }
+
+              // Update clippableRect when resizing the clippable element
+              if (clippableId && elementId === clippableId) {
+                const rect = getElementRect(el);
+                if (rect) {
+                  setClippableRect({
+                    ...rect,
+                    width: e.width,
+                    height: e.height,
+                  });
+                }
+              }
+            }}
+            onResizeEnd={(e) => {
+              const el = e.target as HTMLElement;
+              const elementId = el.getAttribute("data-element-id");
+              if (elementId && updateElementConfig) {
+                const newWidth = e.lastEvent?.width || el.offsetWidth;
+                const newHeight = e.lastEvent?.height || el.offsetHeight;
+                el.style.width = `${newWidth}px`;
+                el.style.height = `${newHeight}px`;
+                updateElementConfig(elementId, {
+                  size: {
+                    width: newWidth,
+                    height: newHeight,
+                  },
+                });
+                moveableRef.current?.updateRect();
+              }
+            }}
+            onRotate={canvasActions.onRotate}
+            // onClip={e => {
+            //     // Convert pixel values to percentages for proper scaling
+            //     const rect = e.target.getBoundingClientRect();
+            //     let clipStyle = e.clipStyle;
+
+            //     // Check if it's a polygon with pixel values
+            //     const match = clipStyle.match(/polygon\(([^)]+)\)/);
+            //     if (match && rect.width > 0 && rect.height > 0) {
+            //         const pointsStr = match[1];
+            //         const points = pointsStr.split(',').map(p => p.trim());
+
+            //         const convertedPoints = points.map(point => {
+            //             // Parse "Xpx Ypx" format
+            //             const parts = point.split(' ');
+            //             if (parts.length === 2) {
+            //                 const x = parseFloat(parts[0]);
+            //                 const y = parseFloat(parts[1]);
+
+            //                 // Convert to percentages
+            //                 const xPercent = (x / rect.width) * 100;
+            //                 const yPercent = (y / rect.height) * 100;
+
+            //                 return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
+            //             }
+            //             return point;
+            //         });
+
+            //         clipStyle = `polygon(${convertedPoints.join(', ')})`;
+            //     }
+
+            //     e.target.style.clipPath = clipStyle;
+            //     // Save to store
+            //     if (clippableId && updateElementConfig) {
+            //         updateElementConfig(clippableId, {
+            //             style: { clipPath: clipStyle }
+            //         });
+            //     }
+            // }}
+            onRotateEnd={(e) =>
+              canvasActions.onRotateEnd(e, (elementId, newAngle) => {
+                // Save to store
+                // if (elementId && updateElementConfig) {
+                //   updateElementConfig(elementId, {
+                //     style: { transform: `rotate(${newAngle}deg)` }
+                //   });
+                // }
+              })
             }
+            snappable={true}
+            customClipPath={currentClipPath}
+            isDisplaySnapDigit={true}
+          ></Moveable>
 
-            // Se clicou duas vezes no item selecionado, ativa modo clippable
-            const flatted = deepFlat(targets);
-            const isCurrentlySelected = flatted.some(t => t === e.moveableTarget);
+          <Selecto
+            ref={selectoRef}
+            dragContainer={window}
+            selectableTargets={[".selecto-area .cube"]}
+            hitRate={0}
+            selectByClick={true}
+            selectFromInside={false}
+            toggleContinueSelect={["shift"]}
+            ratio={0}
+            onDragStart={onDragStart}
+            onSelect={onSelect}
+            onSelectEnd={onSelectEnd}
+          ></Selecto>
+          <Elements selectedIds={selectedIds} />
 
-            if (isCurrentlySelected && flatted.length === 1) {
-                setClippableId(targetId);
-                return;
-            }
-
-            // Comportamento padrão para grupos
-            const childs = groupManager.selectSubChilds(targets, e.moveableTarget);
-            setSelectedTargets(childs.targets());
-            return;
-        }
-        if (e.isTrusted) {
-            selectoRef.current!.clickTarget(e.inputEvent, e.moveableTarget);
-        }
-    }, [groupManager, setSelectedTargets, targets, clippableId]);
-
-    const onSelect = useCallback((e: any) => {
-        const {
-            startAdded,
-            startRemoved,
-            isDragStartEnd,
-        } = e;
-
-        if (isDragStartEnd) {
-            return;
-        }
-        const nextChilds = groupManager.selectSameDepthChilds(
-            e.data.startTargets,
-            startAdded,
-            startRemoved,
-        );
-
-        setSelectedTargets(nextChilds.targets());
-    }, [groupManager, setSelectedTargets]);
-
-    const onSelectEnd = useCallback((e: any) => {
-        const { isDragStartEnd, inputEvent, selected } = e;
-        const target = inputEvent.target as HTMLElement;
-
-        // Verificar se há algum popover aberto (Radix usa portal)
-        const hasOpenPopover = document.querySelector('[data-radix-popper-content-wrapper]');
-
-        // Ignorar cliques em menus flutuantes, popovers e modais
-        if (
-            hasOpenPopover ||
-            target.closest('[data-slot="floating-menu-content"]') ||
-            target.closest('[data-radix-popper-content-wrapper]') ||
-            target.closest('[role="dialog"]') ||
-            target.closest('.react-colorful')
-        ) {
-            return;
-        }
-
-        const moveable = moveableRef.current!;
-        if (isDragStartEnd) {
-            inputEvent.preventDefault();
-            moveable.waitToChangeTarget().then(() => {
-                moveable.dragStart(inputEvent);
-            });
-        }
-        e.currentTarget.setSelectedTargets(selected);
-        setSelectedTargets(selected);
-
-        const newSelectedIds = selected.map((el: any) => el.getAttribute("data-element-id")) as string[];
-        setSelectedIds(newSelectedIds);
-
-        // Desativar clippable se selecionou outro item
-        if (clippableId && !newSelectedIds.includes(clippableId)) {
-            setClippableId(null);
-        }
-    }, [groupManager, setSelectedTargets, clippableId]);
-
-
-    const onClipPathChange = useCallback((newClipPath: string) => {
-        console.log('Novo clipPath:', newClipPath);
-        if (clippableId && updateElementConfig) {
-            updateElementConfig(clippableId, {
-                style: { clipPath: newClipPath }
-            });
-        }
-
-    }, [clippableId, updateElementConfig]);
-
-    return <div id="canvas-editor" className="root h-full">
-        <div className=" h-full w-full flex items-center justify-center">
+          {/* ClipPath Editor Overlay */}
+          {clippableId && clippableRect && (
             <div
-
-                className="bg-green-300"
-                style={{ width: 450, height: 800, position: "relative" }}
+              className="absolute z-50 pointer-events-none"
+              data-clip-editor
+              style={{
+                left: 0,
+                top: 0,
+                width: "100%",
+                height: "100%",
+                overflow: "visible",
+              }}
             >
-
-
-                <Moveable
-                    ref={moveableRef}
-                    ables={[Editable]}
-                    props={{
-                        editable: true,
-                        onDelete: handleDeleteElement,
-                    }}
-                    draggable={true}
-                    rotatable={!clippableId}
-                    scalable={!clippableId}
-                    resizable={true}
-                    // clippable={!!clippableId}
-                    dragWithClip={false}
-                    customClipPath={currentClipPath}
-                    target={targets}
-                    snapThreshold={5}
-                    snapRotationDegrees={Array.from(
-                        { length: 72 },
-                        (_, i) => i * 5,
-                    )}
-                    onClickGroup={onClickGroup}
-                    onClick={onClickGroup}
-
-                    verticalGuidelines={[0, 112.5, 225, 337.5, 450]}
-                    horizontalGuidelines={[0, 200, 400, 800]}
-                    elementGuidelines={elementGuidelines}
-                    snapDirections={canvasActions.snapDirections}
-                    elementSnapDirections={canvasActions.elementSnapDirections}
-                    onDrag={canvasActions.onDrag}
-                    onRenderGroup={canvasActions.onRenderGroup}
-                    onResize={canvasActions.onResize}
-                    onRotate={canvasActions.onRotate}
-                    // onClip={e => {
-                    //     // Convert pixel values to percentages for proper scaling
-                    //     const rect = e.target.getBoundingClientRect();
-                    //     let clipStyle = e.clipStyle;
-
-                    //     // Check if it's a polygon with pixel values
-                    //     const match = clipStyle.match(/polygon\(([^)]+)\)/);
-                    //     if (match && rect.width > 0 && rect.height > 0) {
-                    //         const pointsStr = match[1];
-                    //         const points = pointsStr.split(',').map(p => p.trim());
-
-                    //         const convertedPoints = points.map(point => {
-                    //             // Parse "Xpx Ypx" format
-                    //             const parts = point.split(' ');
-                    //             if (parts.length === 2) {
-                    //                 const x = parseFloat(parts[0]);
-                    //                 const y = parseFloat(parts[1]);
-
-                    //                 // Convert to percentages
-                    //                 const xPercent = (x / rect.width) * 100;
-                    //                 const yPercent = (y / rect.height) * 100;
-
-                    //                 return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
-                    //             }
-                    //             return point;
-                    //         });
-
-                    //         clipStyle = `polygon(${convertedPoints.join(', ')})`;
-                    //     }
-
-                    //     e.target.style.clipPath = clipStyle;
-                    //     // Save to store
-                    //     if (clippableId && updateElementConfig) {
-                    //         updateElementConfig(clippableId, {
-                    //             style: { clipPath: clipStyle }
-                    //         });
-                    //     }
-                    // }}
-                    onRotateEnd={(e) => canvasActions.onRotateEnd(e, (elementId, newAngle) => {
-                    })}
-                    snappable={true}
-                    isDisplaySnapDigit={true}
-                ></Moveable>
-
-                <Selecto
-                    ref={selectoRef}
-                    dragContainer={window}
-                    selectableTargets={[".selecto-area .cube"]}
-                    hitRate={0}
-                    selectByClick={true}
-                    selectFromInside={false}
-                    toggleContinueSelect={["shift"]}
-                    ratio={0}
-                    onDragStart={onDragStart}
-                    onSelect={onSelect}
-                    onSelectEnd={onSelectEnd}
-                ></Selecto>
-                <Elements selectedIds={selectedIds} />
-                {clippableId && <PathEditor elementId={clippableId}
-                    width={450}
-                    height={800}
-                    initialClipPath={currentClipPath || ""}
-                    onClipPathChange={onClipPathChange} onClose={() => { }} />}
+              <div
+                className="absolute pointer-events-auto"
+                style={{
+                  left: clippableRect.left,
+                  top: clippableRect.top,
+                  width: clippableRect.width,
+                  height: clippableRect.height,
+                  overflow: "visible",
+                }}
+              >
+                <ClipPathEditor
+                  width={clippableRect.width}
+                  height={clippableRect.height}
+                  value={currentClipPath}
+                  pathPoints={currentPathPoints}
+                  onChange={onClipPathChange}
+                  onClose={onClipPathClose}
+                />
+              </div>
             </div>
-
+          )}
         </div>
-    </div>;
+      </div>
+    </div>
+  );
 }

@@ -150,7 +150,7 @@ export default function ClipPathStudio() {
                             </svg>
                         </div>
                     </div>
-                    {console.log(svgPath)}
+
 
                     {/* Preview como MÁSCARA real em uma DIV */}
                     {svgPath && (
@@ -164,6 +164,7 @@ export default function ClipPathStudio() {
                                     clipPath: `path('${svgPath.replace(/"/g, "'")}')`,
                                 }}
                             >
+                                DIV recortada
                             </div>
                         </div>
                     )}

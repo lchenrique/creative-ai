@@ -22,10 +22,10 @@ export interface GradientConfig {
   angle: number;
   radialType: "circle" | "ellipse";
   radialSize:
-  | "closest-side"
-  | "closest-corner"
-  | "farthest-side"
-  | "farthest-corner";
+    | "closest-side"
+    | "closest-corner"
+    | "farthest-side"
+    | "farthest-corner";
   radialPosition: { x: number; y: number };
   stops: ColorStop[];
   linearStart?: { x: number; y: number };
@@ -36,14 +36,13 @@ export interface GradientConfig {
 
 interface GradientControlProps {
   colorConfig: ColorConfig;
-  setColorConfig: (type: "solid" | "gradient", value: string) => void;
+  setColorConfig: (colorConfig: ColorConfig) => void;
   enableGradient?: boolean;
   enablePattern?: boolean;
   enableImage?: boolean;
   enableVideo?: boolean;
   label?: string;
 }
-
 
 export default function GradientControl({
   colorConfig,
@@ -53,8 +52,13 @@ export default function GradientControl({
   enableImage = false,
   enableVideo = false,
 }: GradientControlProps) {
-  const [tabSelected, setTabSelected] = useState("solid");
+  const [tabSelected, setTabSelected] = useState(colorConfig.type || "solid");
   const [copied, setCopied] = useState(false);
+
+  // Sincroniza a tab quando o colorConfig mudar (quando selecionar outro elemento)
+  useEffect(() => {
+    setTabSelected(colorConfig.type || "solid");
+  }, [colorConfig.type]);
 
   // useEffect(() => {
   //   if (!enableGradient && colorConfig.colorType === "gradient") {
@@ -99,12 +103,11 @@ export default function GradientControl({
     { value: "video", label: "Vídeo" },
   ];
 
-
   return (
     <TooltipProvider>
       <Card
         data-slot="floating-menu-content"
-        className="w-full max-w-[400px] border-none shadow-none no-animation"
+        className="w-full bg-transparent max-w-[400px] border-none shadow-none no-animation"
       >
         <CardContent
           data-slot="floating-menu-content"
@@ -115,7 +118,6 @@ export default function GradientControl({
             value={tabSelected}
             onValueChange={(value) => {
               setTabSelected(value);
-
             }}
             className="w-full"
           >
@@ -137,13 +139,15 @@ export default function GradientControl({
 
             <SolidColorTab
               colorConfig={colorConfig}
-              setColorConfig={(value) => setColorConfig("solid", value)}
+              setColorConfig={(value) =>
+                setColorConfig({ type: "solid", value })
+              }
             />
 
             <GradientTab
-              value={colorConfig.value}
-              onChange={(value) => {
-                setColorConfig("gradient", value);
+              colorConfig={colorConfig}
+              onChange={(gradientState) => {
+                setColorConfig({ type: "gradient", value: gradientState });
               }}
             />
 

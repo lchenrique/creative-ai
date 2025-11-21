@@ -68,14 +68,83 @@ export function pathToClipPath(points: PathPoint[]): string {
         return `polygon(${polygonPoints})`;
     }
 
-    // For curves, convert coordinates to 0-1 range for objectBoundingBox
-    // and use path() - but path() doesn't support objectBoundingBox in CSS
-    // So we need to use polygon approximation or SVG clipPath
-
-    // Approximate curves with multiple line segments for polygon
+    // For curves, use polygon approximation but preserve original points info
+    // This allows the element to follow the curve while maintaining editability
     const approximatedPoints = approximateCurvesToPolygon(points);
     const polygonPoints = approximatedPoints.map(p => `${p.x}% ${p.y}%`).join(', ');
     return `polygon(${polygonPoints})`;
+}
+
+// Parse path data back to points
+export function pathToPathPoints(pathData: string): PathPoint[] {
+    const points: PathPoint[] = [];
+
+    // Parse SVG path commands
+    const commands = pathData.match(/[MLQCZ][^MLQCZ]*/gi);
+    if (!commands) return createDefaultPoints();
+
+    let currentPoint = { x: 0, y: 0 };
+    let currentId = 1;
+
+    for (const command of commands) {
+        const cmd = command[0];
+        const args = command.slice(1).trim().split(/[\s,]+/).map(parseFloat);
+
+        switch (cmd.toUpperCase()) {
+            case 'M':
+                if (args.length >= 2) {
+                    currentPoint = { x: args[0], y: args[1] };
+                    points.push({
+                        id: String(currentId++),
+                        x: currentPoint.x,
+                        y: currentPoint.y,
+                        type: 'L'
+                    });
+                }
+                break;
+            case 'L':
+                if (args.length >= 2) {
+                    currentPoint = { x: args[0], y: args[1] };
+                    points.push({
+                        id: String(currentId++),
+                        x: currentPoint.x,
+                        y: currentPoint.y,
+                        type: 'L'
+                    });
+                }
+                break;
+            case 'Q':
+                if (args.length >= 4) {
+                    const cp1 = { x: args[0], y: args[1] };
+                    currentPoint = { x: args[2], y: args[3] };
+                    points.push({
+                        id: String(currentId++),
+                        x: currentPoint.x,
+                        y: currentPoint.y,
+                        type: 'Q',
+                        cp1
+                    });
+                }
+                break;
+            case 'C':
+                if (args.length >= 6) {
+                    const cp1 = { x: args[0], y: args[1] };
+                    const cp2 = { x: args[2], y: args[3] };
+                    currentPoint = { x: args[4], y: args[5] };
+                    points.push({
+                        id: String(currentId++),
+                        x: currentPoint.x,
+                        y: currentPoint.y,
+                        type: 'C',
+                        cp1,
+                        cp2
+                    });
+                }
+                break;
+        }
+    }
+
+    return points.length > 0 ? points : createDefaultPoints();
 }
 
 // Approximate curves with line segments for polygon fallback
@@ -89,8 +158,8 @@ function approximateCurvesToPolygon(points: PathPoint[]): { x: number; y: number
         if (point.type === 'L' || i === 0) {
             result.push({ x: point.x, y: point.y });
         } else if (point.type === 'Q' && point.cp1) {
-            // Quadratic bezier - approximate with 16 segments for smoother curves
-            const segments = 16;
+            // Quadratic bezier - approximate with fewer segments (4 instead of 16)
+            const segments = 4;
             for (let t = 1; t <= segments; t++) {
                 const ratio = t / segments;
                 const x = quadraticBezier(prevPoint.x, point.cp1.x, point.x, ratio);
@@ -98,8 +167,8 @@ function approximateCurvesToPolygon(points: PathPoint[]): { x: number; y: number
                 result.push({ x, y });
             }
         } else if (point.type === 'C' && point.cp1 && point.cp2) {
-            // Cubic bezier - approximate with 20 segments for smoother curves
-            const segments = 20;
+            // Cubic bezier - approximate with fewer segments (6 instead of 20)
+            const segments = 6;
             for (let t = 1; t <= segments; t++) {
                 const ratio = t / segments;
                 const x = cubicBezier(prevPoint.x, point.cp1.x, point.cp2.x, point.x, ratio);
@@ -160,6 +229,19 @@ export function polygonToPathPoints(polygon: string): PathPoint[] {
     });
 
     return points;
+}
+
+// Parse path clip-path back to points
+export function clipPathToPoints(clipPath: string): PathPoint[] {
+    if (clipPath.includes('polygon')) {
+        return polygonToPathPoints(clipPath);
+    } else if (clipPath.includes('path')) {
+        const match = clipPath.match(/path\("([^"]+)"\)/);
+        if (match) {
+            return pathToPathPoints(match[1]);
+        }
+    }
+    return createDefaultPoints();
 }
 
 // Generate unique ID

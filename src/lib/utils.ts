@@ -19,7 +19,6 @@ export interface GradientObject {
   stops: GradientStop[];
 }
 
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -161,22 +160,20 @@ export const generateCoverClass = (config: ColorConfig) => {
   return "";
 };
 
-
 export function polygonToPoints(str: string): { x: number; y: number }[] {
-  const inside = str.trim()
-    .replace(/^polygon\(|\)$/g, "")
+  const inside = str
     .trim()
+    .replace(/^polygon\(|\)$/g, "")
+    .trim();
 
-  return inside.split(",").map(pair => {
-    const [x, y] = pair.trim().split(/\s+/)
+  return inside.split(",").map((pair) => {
+    const [x, y] = pair.trim().split(/\s+/);
     return {
       x: parseFloat(x),
       y: parseFloat(y),
-    }
-  })
+    };
+  });
 }
-
-
 
 export function parseGradient(css: string): GradientObject | null {
   css = css.trim();
@@ -192,12 +189,12 @@ export function parseGradient(css: string): GradientObject | null {
     // verifica se o primeiro item é um ângulo
     if (angleOrStop.match(/^\d+deg$/)) {
       angle = angleOrStop;
-      stops = stopsArr.map(s => {
+      stops = stopsArr.map((s) => {
         const [color, pos] = s.split(/\s+/);
         return { color, position: pos || "" };
       });
     } else {
-      stops = [angleOrStop, ...stopsArr].map(s => {
+      stops = [angleOrStop, ...stopsArr].map((s) => {
         const [color, pos] = s.split(/\s+/);
         return { color, position: pos || "" };
       });
@@ -223,7 +220,7 @@ export function parseGradient(css: string): GradientObject | null {
       shape = shapePosParts[0].trim();
     }
 
-    stops = stopsArr.map(s => {
+    stops = stopsArr.map((s) => {
       const [color, pos] = s.split(/\s+/);
       return { color, position: pos || "" };
     });
@@ -234,10 +231,9 @@ export function parseGradient(css: string): GradientObject | null {
   return null;
 }
 
-
 export function gradientToCss(grad: GradientObject): string {
   const stopsStr = grad.stops
-    .map(s => (s.position ? `${s.color} ${s.position}` : s.color))
+    .map((s) => (s.position ? `${s.color} ${s.position}` : s.color))
     .join(", ");
 
   if (grad.type === "linear") {
@@ -284,7 +280,7 @@ export function extractGradientData(css: string): ExtractedGradient | null {
     }
   }
 
-  const stops = parts.slice(stopsStart).map(stop => {
+  const stops = parts.slice(stopsStart).map((stop) => {
     const trimmed = stop.trim();
     const match = trimmed.match(/^(.+?)\s+(\d+)%$/);
     if (match) {
