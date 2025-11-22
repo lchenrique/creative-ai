@@ -14,13 +14,13 @@ import { colorConfigToCss } from "@/lib/gradient-utils";
 interface ElemetsComponentProps {
   selectedIds?: string[];
   editingTextId?: string | null;
-  onEditEnd?: () => void;
+  onEditEnd?: (elementId: string, newHeight?: number) => void;
 }
 
 interface ElementProps {
   element: ElementsProps;
   isEditing?: boolean;
-  onEditEnd?: () => void;
+  onEditEnd?: (newHeight?: number) => void;
   onTextChange?: (text: string) => void;
 }
 
@@ -105,7 +105,7 @@ export const Elements = ({
               <Element
                 element={element}
                 isEditing={editingTextId === element.id}
-                onEditEnd={onEditEnd}
+                onEditEnd={(newHeight) => onEditEnd?.(element.id, newHeight)}
                 onTextChange={(text) => handleTextChange(element.id, text)}
               />
             </div>
@@ -129,50 +129,8 @@ export const Menu = () => {
   return (
     <div
       data-slot="floating-menu-content"
-      className="flex flex-col  gap-2  z-9999"
+      className="flex flex- absolute -top-10  gap-2  z-9999"
     >
-      <FloatingMenuItem
-        contentTitle="Adicionar Objetos"
-        trigger={<PlusIcon weight="bold" />}
-        variant="primary"
-        menuContent={
-          <div className=" space-y-2 max-h-[500px] overflow-y-auto [&>div]:w-full [&>div>button>span]:flex">
-            <Button
-              onClick={() => addElement?.("text")}
-              className="flex justify-start w-full "
-            >
-              <TextTIcon className="w-4 h-4 mr-2" />
-              Texto
-            </Button>
-            <Button
-              onClick={() => addElement?.("rectangle")}
-              className="w-full justify-start"
-            >
-              <PlusIcon className="w-4 h-4 mr-2" />
-              Retângulo
-            </Button>
-            <Button
-              onClick={() => addElement?.("circle")}
-              className="w-full justify-start"
-            >
-              <CircleIcon className="w-4 h-4 mr-2" />
-              Círculo
-            </Button>
-            {/* <Button
-                            onClick={() => addElement?.("triangle")}
-                            className="w-full justify-start"
-                        >
-                            <TriangleIcon className="w-4 h-4 mr-2" />
-                            Triângulo
-                        </Button> */}
-            {/* <Button onClick={() => addLine()} className="w-full justify-start">
-                            <MinusIcon className="w-4 h-4 mr-2" />
-                            Linha
-                        </Button> */}
-          </div>
-        }
-      />
-
       <FloatingMenuItem
         contentTitle="Controles de Elemento"
         trigger={<ShapesIcon weight="bold" />}

@@ -168,18 +168,26 @@ export const TextController = () => {
   // Ref for tracking current element
   const currentIdRef = useRef<string | null>(null);
 
-  // Sync local state when selected element changes
+  // Ref para rastrear o fontSize atual do store
+  const lastFontSizeRef = useRef<number | null>(null);
+
+  // Sync local state when selected element changes or element updates
   useEffect(() => {
     const selectedId = selectedIds[0];
+    const freshElement = elements.find((el) => el.id === selectedId);
 
-    if (selectedId && selectedId !== currentIdRef.current) {
-      const freshElement = elements.find((el) => el.id === selectedId);
-      if (freshElement?.type === "text") {
-        const style = freshElement.config.style;
+    if (selectedId && freshElement?.type === "text") {
+      const style = freshElement.config.style;
+      // Só usa fallback 24 se fontSize realmente não existir no store
+      const storeFontSize =
+        style.fontSize !== undefined ? Math.round(style.fontSize) : 24;
 
-        // Font
+      // Só atualiza tudo quando muda o elemento selecionado
+      if (selectedId !== currentIdRef.current) {
+        // Font (incluindo fontSize na inicialização)
         setFontFamily(style.fontFamily || "Inter");
-        setFontSize(style.fontSize || 24);
+        setFontSize(storeFontSize);
+        lastFontSizeRef.current = storeFontSize;
         setFontWeight(String(style.fontWeight || 400));
         setFontStyle((style.fontStyle as "normal" | "italic") || "normal");
         setTextAlign(style.textAlign || "left");
@@ -233,10 +241,21 @@ export const TextController = () => {
         // Spacing
         setLetterSpacing(style.letterSpacing || 0);
         setLineHeight(style.lineHeight || 1.2);
+
+        currentIdRef.current = selectedId;
+      } else {
+        // Mesmo elemento - só sincroniza fontSize se mudou no store (ex: via resize)
+        if (
+          lastFontSizeRef.current !== null &&
+          lastFontSizeRef.current !== storeFontSize
+        ) {
+          setFontSize(storeFontSize);
+          lastFontSizeRef.current = storeFontSize;
+        }
       }
-      currentIdRef.current = selectedId;
     } else if (!selectedId) {
       currentIdRef.current = null;
+      lastFontSizeRef.current = null;
     }
   }, [selectedIds, elements]);
 
@@ -258,20 +277,62 @@ export const TextController = () => {
     }>,
   ) => {
     if (updates.fontFamily !== undefined) setFontFamily(updates.fontFamily);
-    if (updates.fontSize !== undefined) setFontSize(updates.fontSize);
+    if (updates.fontSize !== undefined) {
+      const rounded = Math.round(updates.fontSize);
+      setFontSize(rounded);
+      lastFontSizeRef.current = rounded; // Atualiza ref para evitar loop
+    }
     if (updates.fontWeight !== undefined) setFontWeight(updates.fontWeight);
     if (updates.fontStyle !== undefined) setFontStyle(updates.fontStyle);
     if (updates.textAlign !== undefined) setTextAlign(updates.textAlign);
 
+    // Cria objeto só com as propriedades que realmente foram passadas
+    const styleUpdates: Record<string, unknown> = {};
+
+    if (updates.fontFamily !== undefined) {
+      styleUpdates.fontFamily = updates.fontFamily;
+    }
+    if (updates.fontSize !== undefined) {
+      styleUpdates.fontSize = Math.round(updates.fontSize);
+    }
+    if (updates.fontWeight !== undefined) {
+      styleUpdates.fontWeight = Number(updates.fontWeight);
+    }
+    if (updates.fontStyle !== undefined) {
+      styleUpdates.fontStyle = updates.fontStyle;
+    }
+    if (updates.textAlign !== undefined) {
+      styleUpdates.textAlign = updates.textAlign;
+    }
+
     selectedIds.forEach((id) => {
       updateElementConfig?.(id, {
-        style: {
-          ...updates,
-          fontWeight: updates.fontWeight
-            ? Number(updates.fontWeight)
-            : undefined,
-        },
+        style: styleUpdates,
       });
+
+      // Recalcula tamanho do elemento após mudar fonte
+      if (updates.fontSize !== undefined || updates.fontFamily !== undefined) {
+        requestAnimationFrame(() => {
+          const wrapper = document.querySelector(
+            `[data-element-id="${id}"]`,
+          ) as HTMLElement;
+          const textEl = wrapper?.querySelector(
+            '[data-element-type="text"]',
+          ) as HTMLElement;
+
+          if (wrapper && textEl) {
+            const newHeight = textEl.offsetHeight;
+            const newWidth = textEl.offsetWidth;
+            wrapper.style.height = `${newHeight}px`;
+            wrapper.style.width = `${newWidth}px`;
+            updateElementConfig?.(id, {
+              size: { height: newHeight, width: newWidth },
+            });
+            // Dispara evento para atualizar o Moveable em tempo real
+            window.dispatchEvent(new CustomEvent("moveable-update-rect"));
+          }
+        });
+      }
     });
   };
 

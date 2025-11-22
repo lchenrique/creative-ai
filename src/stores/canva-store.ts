@@ -9,6 +9,10 @@ export type ColorConfig =
   | {
       type: "gradient";
       value: GradientState;
+    }
+  | {
+      type: "image";
+      value: string;
     };
 
 // Path point types for clip-path editor

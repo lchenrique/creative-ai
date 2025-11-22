@@ -1,11 +1,12 @@
-import React, { useCallback, useRef, type RefObject } from "react";
+import React, { useCallback, useMemo, useRef, type RefObject } from "react";
 import { type ElementsProps } from "@/stores/canva-store";
+import { colorConfigToCss } from "@/lib/gradient-utils";
 
 export interface TextElementProps {
   el: ElementsProps;
   editing: boolean;
   editableRef: RefObject<HTMLDivElement | null>;
-  onEditEnd?: () => void;
+  onEditEnd?: (newHeight?: number) => void;
   onTextChange?: (text: string) => void;
 }
 
@@ -25,27 +26,54 @@ export const TextElement = ({
   const textStroke = style.WebkitTextStroke;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter") {
-      if (!e.shiftKey) {
-        // Enter sem Shift: previne
-        e.preventDefault();
-      } else {
-        // Shift+Enter: permite quebra de linha
-        // Deixa o comportamento padrão acontecer
-      }
-    }
-
     if (e.key === "Escape") {
       e.preventDefault();
       onEditEnd?.();
     }
+    // Enter normal: permite quebra de linha (comportamento padrão)
+    // Não precisa fazer nada, o contentEditable já quebra linha com Enter
   };
 
   const handleBlur = useCallback(() => {
     const html = editableRef.current?.innerHTML ?? "";
+    const newHeight = editableRef.current?.offsetHeight;
     onTextChange?.(html);
-    onEditEnd?.();
+    onEditEnd?.(newHeight);
   }, [onTextChange, onEditEnd, editableRef]);
+
+  // Gerar CSS de background (suporta gradiente)
+  const backgroundCss = useMemo(() => {
+    const bgConfig = style.backgroundColor;
+    if (!bgConfig) return "transparent";
+
+    // Se for string simples (cor sólida), retorna direto
+    if (typeof bgConfig === "string") return bgConfig;
+
+    // Se for objeto ColorConfig, usa a função colorConfigToCss
+    return colorConfigToCss(
+      bgConfig,
+      el.config.size.width,
+      el.config.size.height,
+    );
+  }, [style.backgroundColor, el.config.size.width, el.config.size.height]);
+
+  const componentStyle = {
+    fontFamily: style.fontFamily,
+    fontWeight: style.fontWeight,
+    fontStyle: style.fontStyle || "normal",
+    color: style.color === "transparent" ? "#000" : style.color,
+    background: backgroundCss,
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    textAlign: style.textAlign || "left",
+    letterSpacing: style.letterSpacing ? `${style.letterSpacing}px` : undefined,
+    lineHeight: style.lineHeight || 1.2,
+    fontSize: `${style.fontSize}px`,
+    WebkitTextStroke: textStroke,
+    textShadow: textShadow,
+    width: "100%",
+    height: "auto",
+  };
 
   return (
     <div
@@ -58,25 +86,7 @@ export const TextElement = ({
       {!editing ? (
         <div
           data-element-type="text"
-          style={{
-            fontFamily: style.fontFamily,
-            fontWeight: style.fontWeight,
-            fontStyle: style.fontStyle || "normal",
-            color: style.color === "transparent" ? "#000" : style.color,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            textAlign: style.textAlign || "left",
-            letterSpacing: style.letterSpacing
-              ? `${style.letterSpacing}px`
-              : undefined,
-            lineHeight: style.lineHeight || 1.2,
-            fontSize: `${style.fontSize}px`,
-            WebkitTextStroke: textStroke,
-            textShadow: textShadow,
-            width: "100%",
-            height: "auto",
-            backgroundColor: "red",
-          }}
+          style={componentStyle}
           dangerouslySetInnerHTML={{ __html: style.text || "Texto" }}
         />
       ) : (
@@ -110,7 +120,7 @@ export const TextElement = ({
           }}
           onKeyDown={handleKeyDown}
           onInput={(e) => {
-            // Atualiza conforme o usuário digita, mas não força re-render
+            // Atualiza conforme o usuário digita
             const html = e.currentTarget.innerHTML;
             onTextChange?.(html);
           }}
@@ -120,23 +130,7 @@ export const TextElement = ({
           className={
             !style.text || style.text.trim() === "" ? "empty-text" : ""
           }
-          style={{
-            fontFamily: style.fontFamily,
-            fontWeight: style.fontWeight,
-            fontStyle: style.fontStyle || "normal",
-            color: style.color === "transparent" ? "#000" : style.color,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            outline: "none",
-            minHeight: "1em",
-            textAlign: style.textAlign || "left",
-            letterSpacing: style.letterSpacing
-              ? `${style.letterSpacing}px`
-              : undefined,
-            lineHeight: style.lineHeight || 1.2,
-            WebkitTextStroke: textStroke,
-            textShadow: textShadow,
-          }}
+          style={componentStyle}
         />
       )}
     </div>

@@ -40,6 +40,7 @@ export const BackgroundController = () => {
           // Atualiza o background global
           setCanvasBgColor?.(newConfig);
         }}
+        enableImage={true}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { GradientPreview } from "../@new/canvas/gradient-preview";
 import { GradientTab } from "./gradient-tab";
 import { SolidColorTab } from "./solid-color-tab";
+import { ImageTab } from "./image-tab";
 
 export interface ColorStop {
   id: string;
@@ -153,19 +154,19 @@ export default function GradientControl({
                 }}
               />
             )}
-
-            {/* {enablePattern && (
-              <PatternTab
-                colorConfig={colorConfig}
-                setColorConfig={setColorConfig}
-              />
-            )}
             {enableImage && (
               <ImageTab
                 colorConfig={colorConfig}
                 setColorConfig={setColorConfig}
               />
             )}
+            {/* {enablePattern && (
+              <PatternTab
+                colorConfig={colorConfig}
+                setColorConfig={setColorConfig}
+              />
+            )}
+
             {enableVideo && (
               <VideoTab
                 colorConfig={colorConfig}

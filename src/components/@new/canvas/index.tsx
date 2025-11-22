@@ -10,6 +10,12 @@ import { canvasActions } from "./canvas-actions";
 import { Editable } from "./editable-able";
 import { Elements, Menu } from "./elements/elements";
 import { ClipPathEditor } from "./path-editor/path-editor";
+import { useCanvasKeyboard } from "./hooks/use-canvas-keyboard";
+import { useClipPathEditor } from "./hooks/use-clip-path-editor";
+import {
+  handleTextResize,
+  handleTextResizeStart,
+} from "./handlers/text-resize-handler";
 
 export default function Canvas() {
   const groupManager = React.useMemo<GroupManager>(
@@ -30,70 +36,22 @@ export default function Canvas() {
   const selectedIds = useCanvasStore((state) => state.selectedIds);
   const setSelectedIds = useCanvasStore((state) => state.setSelectedIds);
 
-  // Clippable mode state
-  const [clippableId, setClippableId] = React.useState<string | null>(null);
-
   // Text editing mode state
   const [editingTextId, setEditingTextId] = React.useState<string | null>(null);
 
-  // Get clipPath and pathPoints for current clippable element
-  const currentClipPath = React.useMemo(() => {
-    if (!clippableId) return undefined;
-    const element = elements.find((el) => el.id === clippableId);
-    return (
-      element?.config.style.clipPath ||
-      "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
-    );
-  }, [clippableId, elements]);
-
-  const currentPathPoints = React.useMemo(() => {
-    if (!clippableId) return undefined;
-    const element = elements.find((el) => el.id === clippableId);
-    return element?.config.style.clipPathPoints;
-  }, [clippableId, elements]);
-
-  // Get position and size of clippable element
-  const [clippableRect, setClippableRect] = React.useState<{
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-  } | null>(null);
-
-  // Helper function to get element rect relative to canvas
-  const getElementRect = React.useCallback((el: HTMLElement) => {
-    const canvas = document.querySelector(
-      '[style*="width: 450px"]',
-    ) as HTMLElement;
-    if (!canvas) return null;
-
-    const canvasRect = canvas.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-
-    return {
-      left: elRect.left - canvasRect.left,
-      top: elRect.top - canvasRect.top,
-      width: elRect.width,
-      height: elRect.height,
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (!clippableId) {
-      setClippableRect(null);
-      return;
-    }
-    // Small delay to ensure DOM is updated
-    setTimeout(() => {
-      const el = document.querySelector(
-        `[data-element-id="${clippableId}"]`,
-      ) as HTMLElement;
-      if (el) {
-        const rect = getElementRect(el);
-        if (rect) setClippableRect(rect);
-      }
-    }, 0);
-  }, [clippableId, getElementRect]);
+  // ClipPath editor hook
+  const {
+    clippableId,
+    setClippableId,
+    clippableRect,
+    currentClipPath,
+    currentPathPoints,
+    selectedType,
+    getElementRect,
+    onClipPathChange,
+    onClipPathClose,
+    updateClippableRect,
+  } = useClipPathEditor({ elements, updateElementConfig });
   const setSelectedTargets = React.useCallback(
     (nextTargetes: MoveableTargetGroupsType) => {
       selectoRef.current!.setSelectedTargets(deepFlat(nextTargetes));
@@ -121,72 +79,26 @@ export default function Canvas() {
     groupManager.set([], elements);
   }, []);
 
-  // Keyboard delete handler
+  // Keyboard shortcuts (Delete, Escape)
+  useCanvasKeyboard({
+    selectedIds,
+    clippableId,
+    removeElement,
+    setClippableId,
+    setSelectedTargets,
+    setSelectedIds,
+  });
+
+  // Listener para atualizar Moveable quando fonte/tamanho mudar
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in input/textarea
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      // Escape to exit clip mode
-      if (e.key === "Escape" && clippableId) {
-        e.preventDefault();
-        setClippableId(null);
-        return;
-      }
-
-      if (e.key === "Delete" && selectedIds && selectedIds.length > 0) {
-        e.preventDefault();
-        // Delete all selected elements
-        selectedIds.forEach((id) => {
-          if (removeElement) {
-            removeElement(id);
-          }
-        });
-        setSelectedTargets([]);
-        setSelectedIds([]);
-      }
+    const handleMoveableUpdate = () => {
+      moveableRef.current?.updateRect();
     };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIds, removeElement, setSelectedTargets, clippableId]);
-
-  // Global double-click handler to exit clip mode
-  React.useEffect(() => {
-    if (!clippableId) return;
-
-    const handleDoubleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Ignore double-clicks on SVG elements (clip editor)
-      const tagName = target?.tagName?.toLowerCase();
-      const isClipEditorElement =
-        tagName === "svg" ||
-        tagName === "circle" ||
-        tagName === "path" ||
-        tagName === "line" ||
-        tagName === "rect" ||
-        tagName === "text";
-
-      if (!isClipEditorElement) {
-        setClippableId(null);
-      }
-    };
-
-    // Add listener after a small delay to avoid catching the double-click that activated clip mode
-    const timeoutId = setTimeout(() => {
-      window.addEventListener("dblclick", handleDoubleClick);
-    }, 100);
-
+    window.addEventListener("moveable-update-rect", handleMoveableUpdate);
     return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("dblclick", handleDoubleClick);
+      window.removeEventListener("moveable-update-rect", handleMoveableUpdate);
     };
-  }, [clippableId]);
+  }, []);
 
   const onDragStart = useCallback(
     (e: any) => {
@@ -369,7 +281,6 @@ export default function Canvas() {
   const onSelect = useCallback(
     (e: any) => {
       const { startAdded, startRemoved, isDragStartEnd } = e;
-      console.log("e:", e);
       if (isDragStartEnd) {
         return;
       }
@@ -458,39 +369,6 @@ export default function Canvas() {
     ],
   );
 
-  const onClipPathChange = useCallback(
-    (newClipPath: string) => {
-      if (clippableId && updateElementConfig) {
-        updateElementConfig(clippableId, {
-          style: { clipPath: newClipPath },
-        });
-      }
-    },
-    [clippableId, updateElementConfig],
-  );
-
-  // Called when editor closes - saves final polygon version and pathPoints
-  const onClipPathClose = useCallback(
-    (
-      polygonClipPath: string,
-      pathPoints?: import("@/stores/canva-store").PathPoint[],
-    ) => {
-      if (clippableId && updateElementConfig) {
-        updateElementConfig(clippableId, {
-          style: {
-            clipPath: polygonClipPath,
-            clipPathPoints: pathPoints,
-          },
-        });
-      }
-    },
-    [clippableId, updateElementConfig],
-  );
-
-  const selectedType = elements.find(
-    (element) => element.id === clippableId,
-  )?.type;
-
   // Estado para controlar keepRatio dinamicamente durante resize/scale
   const [keepRatioForResize, setKeepRatioForResize] = React.useState(false);
 
@@ -544,104 +422,28 @@ export default function Canvas() {
               if (clippableId) {
                 const el = e.target as HTMLElement;
                 if (el.getAttribute("data-element-id") === clippableId) {
-                  const rect = getElementRect(el);
-                  if (rect) setClippableRect(rect);
+                  updateClippableRect(el);
                 }
               }
             }}
             onRenderGroup={canvasActions.onRenderGroup}
             onResizeStart={(e) => {
-              const el = e.target as HTMLElement;
-              const elementId = el.getAttribute("data-element-id");
-              const element = elements.find(
-                (elItem) => elItem.id === elementId,
-              );
-              const direction = e.direction;
-              // Cantos: ambas direções são diferentes de 0 (ex: [1,1], [-1,1], [1,-1], [-1,-1])
-              const isCorner = direction[0] !== 0 && direction[1] !== 0;
-
-              // Para texto nos cantos: manter ratio
-              if (element?.type === "text" && isCorner) {
-                setKeepRatioForResize(true);
-              } else {
-                setKeepRatioForResize(false);
-              }
+              handleTextResizeStart(e, elements, setKeepRatioForResize);
             }}
             onResize={(e) => {
               const el = e.target as HTMLElement;
               const elementId = el.getAttribute("data-element-id");
-              const element = elements.find(
-                (elItem) => elItem.id === elementId,
-              );
-              const direction = e.direction;
-              const isCorner = direction[0] !== 0 && direction[1] !== 0;
 
-              // Buscar o elemento de texto interno
-              const textElement = el.querySelector(
-                '[data-element-type="text"]',
-              ) as HTMLElement;
+              // Tenta processar como texto primeiro
+              const wasTextHandled = handleTextResize(e, {
+                elements,
+                updateElementConfig,
+                moveableRef,
+              });
 
-              if (element?.type === "text" && textElement) {
-                if (isCorner) {
-                  // CANTOS: Scale proporcional - atualiza fontSize baseado na altura
-                  const currentFontSize = element.config.style.fontSize || 24;
-                  const originalHeight = element.config.size.height;
-                  const scale = e.height / originalHeight;
-                  const newFontSize = currentFontSize * scale;
-
-                  el.style.width = `${e.width}px`;
-                  el.style.height = `${e.height}px`;
-                  el.style.transform = e.drag.transform;
-                  textElement.style.fontSize = `${newFontSize}px`;
-
-                  // Salvar no store
-                  if (elementId && updateElementConfig) {
-                    updateElementConfig(elementId, {
-                      size: { width: e.width, height: e.height },
-                      style: { fontSize: newFontSize },
-                    });
-                  }
-                } else {
-                  // LATERAIS: Resize livre na largura, altura se ajusta ao conteúdo
-                  // Extrair apenas a translação X do transform, ignorar Y para manter posição do topo
-                  const transform = e.drag.transform;
-                  const translateMatch = transform.match(
-                    /translate\(([^,]+),\s*([^)]+)\)/,
-                  );
-                  let newTransform = transform;
-
-                  if (translateMatch) {
-                    // Manter apenas translação X, zerar Y
-                    const translateX = translateMatch[1];
-                    newTransform = transform.replace(
-                      /translate\([^)]+\)/,
-                      `translate(${translateX}, 0px)`,
-                    );
-                  }
-
-                  el.style.width = `${e.width}px`;
-                  el.style.transform = newTransform;
-
-                  // Deixar altura automática para o texto quebrar
-                  el.style.height = "auto";
-
-                  // Após o texto ajustar, pegar a altura real
-                  requestAnimationFrame(() => {
-                    const newHeight = textElement.offsetHeight;
-                    el.style.height = `${newHeight}px`;
-
-                    if (elementId && updateElementConfig) {
-                      updateElementConfig(elementId, {
-                        size: { width: e.width, height: newHeight },
-                      });
-                    }
-                    moveableRef.current?.updateRect();
-                  });
-                }
-              } else {
-                // Outros elementos: resize normal
+              // Se não foi texto, usa handler padrão
+              if (!wasTextHandled) {
                 canvasActions.onResize(e);
-
                 if (elementId && updateElementConfig) {
                   updateElementConfig(elementId, {
                     size: { width: e.width, height: e.height },
@@ -651,14 +453,7 @@ export default function Canvas() {
 
               // Update clippableRect when resizing the clippable element
               if (clippableId && elementId === clippableId) {
-                const rect = getElementRect(el);
-                if (rect) {
-                  setClippableRect({
-                    ...rect,
-                    width: e.width,
-                    height: e.height,
-                  });
-                }
+                updateClippableRect(el, { width: e.width, height: e.height });
               }
             }}
             onResizeEnd={(e) => {
@@ -676,11 +471,9 @@ export default function Canvas() {
 
                 if (isTextElement) {
                   el.style.height = `${element.clientHeight}px`;
-                  // element.style.fontSize = `${newHeight}px`;
                 } else {
                   el.style.height = `${newHeight}px`;
                 }
-                // el.style.height = `${newHeight}px`;
 
                 el.style.width = `${newWidth}px`;
                 updateElementConfig(elementId, {
@@ -692,79 +485,8 @@ export default function Canvas() {
                 moveableRef.current?.updateRect();
               }
             }}
-            onScaleStart={(e) => {
-              const el = e.target as HTMLElement;
-              const elementId = el.getAttribute("data-element-id");
-              const element = elements.find(
-                (elItem) => elItem.id === elementId,
-              );
-              const direction = e.direction;
-              // Cantos: ambas direções são diferentes de 0
-              const isCorner = direction[0] !== 0 && direction[1] !== 0;
-
-              // Para texto: manter ratio só nos cantos
-              if (element?.type === "text") {
-                if (isCorner) {
-                  setKeepRatioForResize(true);
-                } else {
-                  setKeepRatioForResize(false);
-                }
-              } else {
-                setKeepRatioForResize(false);
-              }
-            }}
-            onScale={(e) => {
-              e.target.style.transform = e.drag.transform;
-            }}
             onRotate={canvasActions.onRotate}
-            // onClip={e => {
-            //     // Convert pixel values to percentages for proper scaling
-            //     const rect = e.target.getBoundingClientRect();
-            //     let clipStyle = e.clipStyle;
-
-            //     // Check if it's a polygon with pixel values
-            //     const match = clipStyle.match(/polygon\(([^)]+)\)/);
-            //     if (match && rect.width > 0 && rect.height > 0) {
-            //         const pointsStr = match[1];
-            //         const points = pointsStr.split(',').map(p => p.trim());
-
-            //         const convertedPoints = points.map(point => {
-            //             // Parse "Xpx Ypx" format
-            //             const parts = point.split(' ');
-            //             if (parts.length === 2) {
-            //                 const x = parseFloat(parts[0]);
-            //                 const y = parseFloat(parts[1]);
-
-            //                 // Convert to percentages
-            //                 const xPercent = (x / rect.width) * 100;
-            //                 const yPercent = (y / rect.height) * 100;
-
-            //                 return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
-            //             }
-            //             return point;
-            //         });
-
-            //         clipStyle = `polygon(${convertedPoints.join(', ')})`;
-            //     }
-
-            //     e.target.style.clipPath = clipStyle;
-            //     // Save to store
-            //     if (clippableId && updateElementConfig) {
-            //         updateElementConfig(clippableId, {
-            //             style: { clipPath: clipStyle }
-            //         });
-            //     }
-            // }}
-            onRotateEnd={(e) =>
-              canvasActions.onRotateEnd(e, (elementId, newAngle) => {
-                // Save to store
-                // if (elementId && updateElementConfig) {
-                //   updateElementConfig(elementId, {
-                //     style: { transform: `rotate(${newAngle}deg)` }
-                //   });
-                // }
-              })
-            }
+            onRotateEnd={(e) => canvasActions.onRotateEnd(e, () => {})}
             snappable={true}
             customClipPath={currentClipPath}
             isDisplaySnapDigit={true}
@@ -786,7 +508,27 @@ export default function Canvas() {
           <Elements
             selectedIds={selectedIds}
             editingTextId={editingTextId}
-            onEditEnd={() => setEditingTextId(null)}
+            onEditEnd={(elementId, newHeight) => {
+              setEditingTextId(null);
+              const element = elements.find(
+                (element) => element.id === elementId,
+              );
+
+              // Atualiza altura após sair do modo edição
+              if (elementId && newHeight) {
+                updateElementConfig?.(elementId, {
+                  size: {
+                    height: newHeight,
+                    width: element?.config?.size?.width || 0,
+                  },
+                });
+              }
+
+              // Atualiza o Moveable após React re-renderizar
+              requestAnimationFrame(() => {
+                moveableRef.current?.updateRect();
+              });
+            }}
           />
 
           {/* ClipPath Editor Overlay */}

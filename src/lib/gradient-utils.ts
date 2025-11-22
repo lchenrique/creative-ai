@@ -97,6 +97,13 @@ export const colorConfigToCss = (
 
   if (colorConfig.type === "solid") {
     return colorConfig.value || "transparent";
+  } else if (colorConfig.type === "image") {
+    // Image background
+    const imageUrl = colorConfig.value;
+    if (!imageUrl) {
+      return "transparent";
+    }
+    return `url(${imageUrl}) center/cover no-repeat`;
   } else {
     // gradient
     const gradient = colorConfig.value;
