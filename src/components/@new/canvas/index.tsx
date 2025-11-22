@@ -1,16 +1,15 @@
-import { deepFlat } from "@daybrush/utils";
-import * as React from "react";
-import Selecto from "react-selecto";
-import Moveable, { type MoveableTargetGroupsType } from "react-moveable";
-import { GroupManager, type TargetList } from "@moveable/helper";
-import { canvasActions } from "./canvas-actions";
-import { useCallback } from "react";
-import { Elements, Menu } from "./elements/elements";
-import { useCanvasStore } from "@/stores/canva-store";
-import { Editable } from "./editable-able";
-import { PathEditorAble } from "./path-editor-able";
-import { ClipPathEditor } from "./path-editor/path-editor";
 import { Background } from "@/components/art-background";
+import { useCanvasStore } from "@/stores/canva-store";
+import { deepFlat } from "@daybrush/utils";
+import { GroupManager } from "@moveable/helper";
+import * as React from "react";
+import { useCallback } from "react";
+import Moveable, { type MoveableTargetGroupsType } from "react-moveable";
+import Selecto from "react-selecto";
+import { canvasActions } from "./canvas-actions";
+import { Editable } from "./editable-able";
+import { Elements, Menu } from "./elements/elements";
+import { ClipPathEditor } from "./path-editor/path-editor";
 
 export default function Canvas() {
   const groupManager = React.useMemo<GroupManager>(
@@ -20,9 +19,7 @@ export default function Canvas() {
   const [targets, setTargets] = React.useState<MoveableTargetGroupsType>([]);
   const moveableRef = React.useRef<Moveable>(null);
   const selectoRef = React.useRef<Selecto>(null);
-  const [elementGuidelines, setElementGuidelines] = React.useState<
-    HTMLElement[]
-  >([]);
+  const [elementGuidelines] = React.useState<HTMLElement[]>([]);
   // Store
   const updateElementConfig = useCanvasStore(
     (state) => state.updateElementConfig,
@@ -35,6 +32,9 @@ export default function Canvas() {
 
   // Clippable mode state
   const [clippableId, setClippableId] = React.useState<string | null>(null);
+
+  // Text editing mode state
+  const [editingTextId, setEditingTextId] = React.useState<string | null>(null);
 
   // Get clipPath and pathPoints for current clippable element
   const currentClipPath = React.useMemo(() => {
@@ -336,11 +336,20 @@ export default function Canvas() {
           return;
         }
 
-        // Se clicou duas vezes no item selecionado, ativa modo clippable
+        // Se clicou duas vezes no item selecionado
         const flatted = deepFlat(targets);
         const isCurrentlySelected = flatted.some((t) => t === e.moveableTarget);
 
         if (isCurrentlySelected && flatted.length === 1) {
+          // Verificar se é um elemento de texto
+          const element = elements.find((el) => el.id === targetId);
+          if (element?.type === "text") {
+            // Ativar modo de edição de texto
+            setEditingTextId(targetId);
+            return;
+          }
+
+          // Para outros tipos, ativa modo clippable
           setClippableId(targetId);
           return;
         }
@@ -434,8 +443,19 @@ export default function Canvas() {
       if (clippableId && !newSelectedIds.includes(clippableId)) {
         setClippableId(null);
       }
+
+      // Desativar edição de texto se selecionou outro item ou clicou fora
+      if (editingTextId && !newSelectedIds.includes(editingTextId)) {
+        setEditingTextId(null);
+      }
     },
-    [groupManager, setSelectedTargets, clippableId, setBgSlected],
+    [
+      setSelectedTargets,
+      clippableId,
+      editingTextId,
+      setBgSlected,
+      setSelectedIds,
+    ],
   );
 
   const onClipPathChange = useCallback(
@@ -467,6 +487,19 @@ export default function Canvas() {
     [clippableId, updateElementConfig],
   );
 
+  const selectedType = elements.find(
+    (element) => element.id === clippableId,
+  )?.type;
+
+  // Estado para controlar keepRatio dinamicamente durante resize/scale
+  const [keepRatioForResize, setKeepRatioForResize] = React.useState(false);
+
+  // Verificar se o elemento selecionado é texto (para usar scale ao invés de resize)
+  const isTextSelected = React.useMemo(() => {
+    if (selectedIds.length !== 1) return false;
+    const element = elements.find((el) => el.id === selectedIds[0]);
+    return element?.type === "text";
+  }, [selectedIds, elements]);
   return (
     <div id="canvas-editor" className="root h-full">
       <div className=" h-full w-full flex items-center justify-center">
@@ -483,10 +516,15 @@ export default function Canvas() {
               editable: true,
               onDelete: handleDeleteElement,
             }}
-            draggable={!clippableId}
-            rotatable={!clippableId}
-            // scalable={!clippableId}
-            resizable={!clippableId}
+            draggable={!clippableId && !editingTextId}
+            rotatable={!clippableId && !editingTextId}
+            resizable={!clippableId && !editingTextId}
+            scalable={false}
+            renderDirections={
+              isTextSelected
+                ? ["nw", "ne", "sw", "se", "e", "w"]
+                : ["n", "nw", "ne", "s", "se", "sw", "e", "w"]
+            }
             clippable={false}
             dragWithClip={false}
             target={targets}
@@ -499,6 +537,7 @@ export default function Canvas() {
             elementGuidelines={elementGuidelines}
             snapDirections={canvasActions.snapDirections}
             elementSnapDirections={canvasActions.elementSnapDirections}
+            keepRatio={keepRatioForResize}
             onDrag={(e) => {
               canvasActions.onDrag(e);
               // Update clippableRect when dragging the clippable element
@@ -511,19 +550,103 @@ export default function Canvas() {
               }
             }}
             onRenderGroup={canvasActions.onRenderGroup}
-            onResize={(e) => {
-              canvasActions.onResize(e);
-
-              // Save size to store during resize to prevent React from reverting
+            onResizeStart={(e) => {
               const el = e.target as HTMLElement;
               const elementId = el.getAttribute("data-element-id");
-              if (elementId && updateElementConfig) {
-                updateElementConfig(elementId, {
-                  size: {
-                    width: e.width,
-                    height: e.height,
-                  },
-                });
+              const element = elements.find(
+                (elItem) => elItem.id === elementId,
+              );
+              const direction = e.direction;
+              // Cantos: ambas direções são diferentes de 0 (ex: [1,1], [-1,1], [1,-1], [-1,-1])
+              const isCorner = direction[0] !== 0 && direction[1] !== 0;
+
+              // Para texto nos cantos: manter ratio
+              if (element?.type === "text" && isCorner) {
+                setKeepRatioForResize(true);
+              } else {
+                setKeepRatioForResize(false);
+              }
+            }}
+            onResize={(e) => {
+              const el = e.target as HTMLElement;
+              const elementId = el.getAttribute("data-element-id");
+              const element = elements.find(
+                (elItem) => elItem.id === elementId,
+              );
+              const direction = e.direction;
+              const isCorner = direction[0] !== 0 && direction[1] !== 0;
+
+              // Buscar o elemento de texto interno
+              const textElement = el.querySelector(
+                '[data-element-type="text"]',
+              ) as HTMLElement;
+
+              if (element?.type === "text" && textElement) {
+                if (isCorner) {
+                  // CANTOS: Scale proporcional - atualiza fontSize baseado na altura
+                  const currentFontSize = element.config.style.fontSize || 24;
+                  const originalHeight = element.config.size.height;
+                  const scale = e.height / originalHeight;
+                  const newFontSize = currentFontSize * scale;
+
+                  el.style.width = `${e.width}px`;
+                  el.style.height = `${e.height}px`;
+                  el.style.transform = e.drag.transform;
+                  textElement.style.fontSize = `${newFontSize}px`;
+
+                  // Salvar no store
+                  if (elementId && updateElementConfig) {
+                    updateElementConfig(elementId, {
+                      size: { width: e.width, height: e.height },
+                      style: { fontSize: newFontSize },
+                    });
+                  }
+                } else {
+                  // LATERAIS: Resize livre na largura, altura se ajusta ao conteúdo
+                  // Extrair apenas a translação X do transform, ignorar Y para manter posição do topo
+                  const transform = e.drag.transform;
+                  const translateMatch = transform.match(
+                    /translate\(([^,]+),\s*([^)]+)\)/,
+                  );
+                  let newTransform = transform;
+
+                  if (translateMatch) {
+                    // Manter apenas translação X, zerar Y
+                    const translateX = translateMatch[1];
+                    newTransform = transform.replace(
+                      /translate\([^)]+\)/,
+                      `translate(${translateX}, 0px)`,
+                    );
+                  }
+
+                  el.style.width = `${e.width}px`;
+                  el.style.transform = newTransform;
+
+                  // Deixar altura automática para o texto quebrar
+                  el.style.height = "auto";
+
+                  // Após o texto ajustar, pegar a altura real
+                  requestAnimationFrame(() => {
+                    const newHeight = textElement.offsetHeight;
+                    el.style.height = `${newHeight}px`;
+
+                    if (elementId && updateElementConfig) {
+                      updateElementConfig(elementId, {
+                        size: { width: e.width, height: newHeight },
+                      });
+                    }
+                    moveableRef.current?.updateRect();
+                  });
+                }
+              } else {
+                // Outros elementos: resize normal
+                canvasActions.onResize(e);
+
+                if (elementId && updateElementConfig) {
+                  updateElementConfig(elementId, {
+                    size: { width: e.width, height: e.height },
+                  });
+                }
               }
 
               // Update clippableRect when resizing the clippable element
@@ -541,19 +664,57 @@ export default function Canvas() {
             onResizeEnd={(e) => {
               const el = e.target as HTMLElement;
               const elementId = el.getAttribute("data-element-id");
+              const element = (
+                el.children.item(0) as HTMLElement
+              ).children.item(0) as HTMLElement;
+              const isTextElement =
+                element?.getAttribute("data-element-type") === "text";
+
               if (elementId && updateElementConfig) {
                 const newWidth = e.lastEvent?.width || el.offsetWidth;
-                const newHeight = e.lastEvent?.height || el.offsetHeight;
+                const newHeight = e.lastEvent?.height || el.clientHeight;
+
+                if (isTextElement) {
+                  el.style.height = `${element.clientHeight}px`;
+                  // element.style.fontSize = `${newHeight}px`;
+                } else {
+                  el.style.height = `${newHeight}px`;
+                }
+                // el.style.height = `${newHeight}px`;
+
                 el.style.width = `${newWidth}px`;
-                el.style.height = `${newHeight}px`;
                 updateElementConfig(elementId, {
                   size: {
                     width: newWidth,
-                    height: newHeight,
+                    height: isTextElement ? element.clientHeight : newHeight,
                   },
                 });
                 moveableRef.current?.updateRect();
               }
+            }}
+            onScaleStart={(e) => {
+              const el = e.target as HTMLElement;
+              const elementId = el.getAttribute("data-element-id");
+              const element = elements.find(
+                (elItem) => elItem.id === elementId,
+              );
+              const direction = e.direction;
+              // Cantos: ambas direções são diferentes de 0
+              const isCorner = direction[0] !== 0 && direction[1] !== 0;
+
+              // Para texto: manter ratio só nos cantos
+              if (element?.type === "text") {
+                if (isCorner) {
+                  setKeepRatioForResize(true);
+                } else {
+                  setKeepRatioForResize(false);
+                }
+              } else {
+                setKeepRatioForResize(false);
+              }
+            }}
+            onScale={(e) => {
+              e.target.style.transform = e.drag.transform;
             }}
             onRotate={canvasActions.onRotate}
             // onClip={e => {
@@ -622,10 +783,14 @@ export default function Canvas() {
             onSelect={onSelect}
             onSelectEnd={onSelectEnd}
           ></Selecto>
-          <Elements selectedIds={selectedIds} />
+          <Elements
+            selectedIds={selectedIds}
+            editingTextId={editingTextId}
+            onEditEnd={() => setEditingTextId(null)}
+          />
 
           {/* ClipPath Editor Overlay */}
-          {clippableId && clippableRect && (
+          {clippableId && clippableRect && selectedType !== "text" && (
             <div
               className="absolute z-50 pointer-events-none"
               data-clip-editor

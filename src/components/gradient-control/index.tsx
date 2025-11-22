@@ -93,7 +93,7 @@ export default function GradientControl({
   if (enableGradient) showTabs.push("gradient");
   if (enablePattern) showTabs.push("pattern");
   if (enableImage) showTabs.push("image");
-  if (enableVideo) showTabs.push("video"); // Sempre mostrar vídeo
+  if (enableVideo) showTabs.push("video");
 
   const tabs = [
     { value: "solid", label: "Cor Sólida" },
@@ -103,17 +103,20 @@ export default function GradientControl({
     { value: "video", label: "Vídeo" },
   ];
 
+  const visibleTabs = tabs.filter((tab) => showTabs.includes(tab.value));
+  const hasSingleTab = visibleTabs.length === 1;
+
   return (
     <TooltipProvider>
       <Card
         data-slot="floating-menu-content"
-        className="w-full bg-transparent max-w-[400px] border-none shadow-none no-animation"
+        className="w-full py-0 bg-transparent max-w-[400px] border-none shadow-none no-animation"
       >
         <CardContent
           data-slot="floating-menu-content"
           className="p-0 space-y-3"
         >
-          {/* Tabs principais */}
+          {/* Tabs principais - esconde quando só tem uma tab */}
           <Tabs
             value={tabSelected}
             onValueChange={(value) => {
@@ -121,12 +124,9 @@ export default function GradientControl({
             }}
             className="w-full"
           >
-            <TabsList
-              className={`flex w-full justify-between  mb-2 border-none`}
-            >
-              {tabs
-                .filter((tab) => showTabs.includes(tab.value))
-                .map((tab) => (
+            {!hasSingleTab && (
+              <TabsList className="flex w-full justify-between mb-2 border-none">
+                {visibleTabs.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
@@ -135,7 +135,8 @@ export default function GradientControl({
                     {tab.label}
                   </TabsTrigger>
                 ))}
-            </TabsList>
+              </TabsList>
+            )}
 
             <SolidColorTab
               colorConfig={colorConfig}
@@ -144,12 +145,14 @@ export default function GradientControl({
               }
             />
 
-            <GradientTab
-              colorConfig={colorConfig}
-              onChange={(gradientState) => {
-                setColorConfig({ type: "gradient", value: gradientState });
-              }}
-            />
+            {enableGradient && (
+              <GradientTab
+                colorConfig={colorConfig}
+                onChange={(gradientState) => {
+                  setColorConfig({ type: "gradient", value: gradientState });
+                }}
+              />
+            )}
 
             {/* {enablePattern && (
               <PatternTab

@@ -19,7 +19,7 @@ const INITIAL_STOPS: ColorStop[] = [
   { id: "2", color: "#22d3ee", offset: 100 }, // Cyan-400
 ];
 
-const INITIAL_LINEAR_START = { x: 1, y: 0.5 };
+const INITIAL_LINEAR_START = { x: 0.2, y: 0.5 };
 const INITIAL_LINEAR_END = { x: 0.8, y: 0.5 };
 
 export function GradientEditor({

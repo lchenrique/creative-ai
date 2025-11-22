@@ -272,7 +272,7 @@ body {
     position: absolute;
     width: 12px !important;
     height: 12px !important;
-    border-radius: 0 !important;
+    border-radius: 3px !important;
     border: 2px solid var(--color-background) !important;
     box-sizing: border-box;
     background: var(--color-ring) !important;
@@ -310,8 +310,8 @@ body {
     max-width: 8px !important;
     border-radius: 999px !important;
     background: white !important;
-    border: 2px solid var(--color-primary) !important;
-    margin-top: -20% !important;
+    border: 1px solid var(--color-primary) !important;
+    margin-top: -20px !important;
 }
 .moveable-e {
     margin-left: -4px !important;

@@ -199,7 +199,7 @@ export const parseCssString = (cssString: string): GradientState | null => {
 
       if (stopMatch) {
         const color = stopMatch[1];
-        let offsetValue = parseFloat(stopMatch[2]);
+        const offsetValue = parseFloat(stopMatch[2]);
         const unit = stopMatch[3];
 
         let offset: number;
@@ -270,14 +270,13 @@ export const parseCssString = (cssString: string): GradientState | null => {
 
     const stops: ColorStop[] = [];
     let currentStopId = 1;
-    let prevOffset = -1;
 
     for (const stopString of colorStopStrings) {
       const stopMatch = stopString.trim().match(colorStopRegex);
 
       if (stopMatch) {
         const color = stopMatch[1];
-        let offsetValue = parseFloat(stopMatch[2]);
+        const offsetValue = parseFloat(stopMatch[2]);
         const unit = stopMatch[3];
 
         let offset: number;
@@ -297,7 +296,6 @@ export const parseCssString = (cssString: string): GradientState | null => {
           color,
           offset: parseFloat(offset.toFixed(2)),
         });
-        prevOffset = offset;
       }
     }
 

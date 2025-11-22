@@ -4,8 +4,9 @@ import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
 import { Button } from "@creative-ds/ui";
 import { PlusIcon, ShapesIcon, TextTIcon } from "@phosphor-icons/react";
 import { CircleIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { BackgroundController } from "../controllers/background-controller";
+import { TextController } from "../controllers/text-controller";
 import bgColorSvg from "@/assets/bg-color.svg";
 import { TextElement } from "./text-element";
 import { colorConfigToCss } from "@/lib/gradient-utils";
@@ -178,7 +179,20 @@ export const Menu = () => {
         menuContent={<ShapeControls />}
         open={
           selectedElements.length > 0
-            ? !!selectedElements.find((e) => e.type === "rectangle")?.id
+            ? !!selectedElements.find(
+                (e) => e.type === "rectangle" || e.type === "circle",
+              )?.id
+            : false
+        }
+      />
+
+      <FloatingMenuItem
+        contentTitle="Controles de Texto"
+        trigger={<TextTIcon weight="bold" />}
+        menuContent={<TextController />}
+        open={
+          selectedElements.length > 0
+            ? !!selectedElements.find((e) => e.type === "text")?.id
             : false
         }
       />

@@ -11,8 +11,8 @@ export interface GradientTabProps {
 const DEFAULT_GRADIENT: GradientState = {
   type: "linear",
   angle: 90,
-  linearStart: { x: -0.1, y: 0.5 }, // Handle outside left edge (-10%)
-  linearEnd: { x: 1.1, y: 0.5 }, // Handle outside right edge (110%)
+  linearStart: { x: 0.2, y: 0.5 },
+  linearEnd: { x: 0.8, y: 0.5 },
   stops: [
     { id: "1", color: "#3b82f6", offset: 0 },
     { id: "2", color: "#22d3ee", offset: 100 },
