@@ -23,10 +23,10 @@ export interface GradientConfig {
   angle: number;
   radialType: "circle" | "ellipse";
   radialSize:
-    | "closest-side"
-    | "closest-corner"
-    | "farthest-side"
-    | "farthest-corner";
+  | "closest-side"
+  | "closest-corner"
+  | "farthest-side"
+  | "farthest-corner";
   radialPosition: { x: number; y: number };
   stops: ColorStop[];
   linearStart?: { x: number; y: number };
@@ -126,12 +126,12 @@ export default function GradientControl({
             className="w-full"
           >
             {!hasSingleTab && (
-              <TabsList className="flex w-full justify-between mb-2 border-none">
+              <TabsList className="flex w-full justify-between mb-2 border-none h-8">
                 {visibleTabs.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="data-[state=active]:bg-popover"
+                    className="data-[state=active]:bg-popover text-xs"
                   >
                     {tab.label}
                   </TabsTrigger>

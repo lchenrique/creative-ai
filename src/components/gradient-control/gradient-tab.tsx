@@ -1,5 +1,5 @@
 import { TabsContent } from "@radix-ui/react-tabs";
-import { GradientEditor } from "../@new/canvas/gradient-editor";
+import { GradientEditor } from "../@new/gradient-editor";
 import type { GradientState } from "@/types/gradient";
 import type { ColorConfig } from "@/stores/canva-store";
 

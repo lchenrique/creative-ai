@@ -1,12 +1,10 @@
 import Canvas from "@/components/@new/canvas";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { useRef, useState } from "react";
-import { HugeiconsIcon } from '@hugeicons/react'
-import { GeometricShapes01Icon } from '@hugeicons/core-free-icons'
-import { MenuItem } from "@/components/@new/menu/menu-item";
+
 import { LibrarySidebar } from "@/components/@new/menu/library";
-import ClipPathConverter from "@/components/@new/canvas/path-editor/test";
+import { MenuItem } from "@/components/@new/menu/menu-item";
+import { PageHeader } from "@/components/layout/page-header";
+import { GeometricShapes01Icon } from "@hugeicons/core-free-icons";
+import { useRef, useState } from "react";
 export type ArtConfig = {
   theme: "modern" | "minimal" | "bold" | "elegant";
   backgroundColor: string;
@@ -81,8 +79,7 @@ export function EditorPage() {
         //   importCanvasJSON(jsonData)
         //   console.log('✅ Design importado com sucesso!')
         // }
-      } catch (error) {
-      }
+      } catch (error) { }
     };
     reader.readAsText(file);
 
@@ -121,12 +118,17 @@ export function EditorPage() {
         {/* Preview Area */}
 
         <div className="h-full bg-sidebar border-x p-2">
-          <MenuItem trigger={GeometricShapes01Icon} menuContent={<LibrarySidebar />} />
+          <MenuItem
+            trigger={GeometricShapes01Icon}
+            menuContent={<LibrarySidebar />}
+          />
         </div>
 
-        <div id="menu-editor" className="flex-1 relative overflow-hidden h-full">
+        <div
+          id="menu-editor"
+          className="flex-1 relative overflow-hidden h-full"
+        >
           <Canvas />
-          {/* <ClipPathConverter /> */}
         </div>
       </div>
     </div>

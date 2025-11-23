@@ -1,144 +1,80 @@
-import { patternAnimations } from "@/data/pattern-animations";
-import { PATTERN_DEFAULTS } from "@/lib/pattern-utils";
-import { generateBackgroundCSS, generateCoverClass } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useCanvasStore } from "@/stores/canva-store";
-import { useCreativeStore } from "@/stores/creative-store";
-import { useCallback, useEffect } from "react";
-import { colorConfigToCss } from "@/lib/gradient-utils";
-// Função para extrair cor hex de qualquer formato (hex, rgb, rgba, gradiente)
-const extractHexColor = (colorString: string): string => {
-  // Se já é hex, retornar
-  if (colorString.startsWith("#")) {
-    return colorString;
-  }
+import { filters } from "@/lib/filters";
+import type { CSSProperties } from "react";
+interface ImageCanvasProps {
+  imageUrl: string | null;
+  filter: string;
+  intensity: number;
+  onImageUpload: (file: File) => void;
+}
 
-  // Se é rgb/rgba, converter para hex
-  if (colorString.startsWith("rgb")) {
-    const match = colorString.match(/rgba?\(([^)]+)\)/);
-    if (match) {
-      const values = match[1].split(",").map((v) => parseInt(v.trim()));
-      const [r, g, b] = values;
+export const Background = () => {
+  const imageUrl = useCanvasStore((state) => state.canvasBgColor);
+  const filter = useCanvasStore((state) => state.canvasFilter);
+  const canvasFilterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
+  const intensity = canvasFilterIntensities?.[filter || "original"] ?? 100;
 
-      const toHex = (c: number) => {
-        const hex = Math.round(c).toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      };
+  const getFilterStyle = () => {
+    if (filter === "original") return {};
 
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    }
-  }
+    // Apply filter with intensity
+    const intensityFactor = (intensity - 12) / 100;
+    const currentFilter = filters.find((f) => f.id === filter);
+    const hasMixBlend = !!currentFilter?.mixBlendMode;
 
-  // Se é gradiente, extrair a primeira cor
-  if (colorString.includes("gradient")) {
-    const match = colorString.match(/#[0-9a-fA-F]{6}/);
-    if (match) {
-      return match[0];
-    }
-  }
-
-  // Fallback
-  return "#ffffff";
-};
-
-export const generateComplementaryColor = (
-  solidColor: string,
-  variation: number = 0.5,
-): string => {
-  // Extrair cor hex
-  const hexColor = extractHexColor(solidColor);
-
-  // Converter hex para RGB
-  const hex = hexColor.replace("#", "");
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-
-  // Calcular luminosidade (fórmula padrão)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Determinar se a cor é clara ou escura
-  const isLight = luminance > 0.5;
-
-  // Definir quantos tons mover (usando variação)
-  const toneSteps = Math.min(variation, 2.0); // Limitar a variação máxima
-
-  // Gerar cor complementar
-  let complementaryR, complementaryG, complementaryB;
-
-  if (isLight) {
-    // Se clara, mover alguns tons para baixo (mais escuro)
-    const stepSize = 255 / 8; // Dividir em 8 níveis de luminosidade
-    const darkenAmount = toneSteps * stepSize;
-
-    complementaryR = Math.max(0, r - darkenAmount);
-    complementaryG = Math.max(0, g - darkenAmount);
-    complementaryB = Math.max(0, b - darkenAmount);
-  } else {
-    // Se escura, mover alguns tons para cima (mais claro)
-    const stepSize = 255 / 8; // Dividir em 8 níveis de luminosidade
-    const lightenAmount = toneSteps * stepSize;
-
-    complementaryR = Math.min(255, r + lightenAmount);
-    complementaryG = Math.min(255, g + lightenAmount);
-    complementaryB = Math.min(255, b + lightenAmount);
-  }
-
-  // Converter de volta para hex
-  const toHex = (c: number) => {
-    const hex = Math.round(c).toString(16);
-    return hex.length === 1 ? "0" + hex : hex;
+    return {
+      // If it has mixBlendMode, the filter applies to the overlay, not the container/image
+      filter: hasMixBlend ? undefined : currentFilter?.cssFilter,
+      opacity: intensityFactor > 0 ? 0.2 + (1.4 * intensityFactor) : 0, // Blend from 20% to 100%
+    };
   };
 
-  return `#${toHex(complementaryR)}${toHex(complementaryG)}${toHex(complementaryB)}`;
-};
+  const getMixFilterStyle = () => {
+    if (filter === "original") return {};
 
-export function Background() {
-  const backgroundColorConfig = useCanvasStore((state) => state.canvasBgColor);
-  const setBgSlected = useCanvasStore((state) => state.setBgSlected);
-  const bgSlected = useCanvasStore((state) => state.bgSlected);
+    const currentFilter = filters.find((f) => f.id === filter);
 
-  const handleBgClick = useCallback(() => {
-    setBgSlected?.(true);
-  }, [setBgSlected]);
-
-  //cliclk outside to deselect
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      // if (!target.closest('[data-bg-selected="true"]') || !target.closest('[data-slot="floating-menu-content"]')) {
-      //   setBgSlected?.(false);
-      // }
+    return {
+      filter: currentFilter?.cssFilter,
+      // Opacity is handled by the parent container
+      background: currentFilter?.background,
+      mixBlendMode: currentFilter?.mixBlendMode as CSSProperties["mixBlendMode"],
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [setBgSlected, bgSlected]);
+  };
 
-  const cssBackground = backgroundColorConfig
-    ? colorConfigToCss(backgroundColorConfig, 450, 800)
-    : undefined;
+  if (imageUrl?.type !== "image") return null;
+  const image = imageUrl.value;
 
   return (
-    <div
-      className={cn(
-        "absolute border bg-selected",
-        "data-bg-selected:border-blue-500",
-        "hover:border-blue-300",
-        "bg-background",
-        "z-0",
-      )}
-      onClick={handleBgClick}
-      data-bg-selected={bgSlected || undefined}
-      data-canvas-background="true"
-      style={{
-        width: "450px",
-        height: "800px",
-        left: 0,
-        top: 0,
-        background: cssBackground,
-      }}
-    />
+    <div className="absolute inset-0 w-full h-full flex items-center justify-center p-8 pointer-events-none">
+      <div className="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl">
+        <img
+          src={image}
+          alt="Imagem editada"
+          className="h-full w-full object-cover"
+        />
+        <div
+          className="absolute inset-0 pointer-events-none transition-all duration-300"
+          style={getFilterStyle()}
+        >
+          <img
+            src={image}
+            alt="Filtro aplicado"
+            className="w-full h-full object-cover"
+            style={{
+              mixBlendMode: filters.find((f) => f.id === filter)?.imageMixBlendMode as CSSProperties["mixBlendMode"]
+            }}
+          />
+          {filters.find((f) => f.id === filter)?.mixBlendMode && (
+            <div
+              className="absolute inset-0 pointer-events-none transition-all duration-300"
+              style={getMixFilterStyle()}
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
-}
+};

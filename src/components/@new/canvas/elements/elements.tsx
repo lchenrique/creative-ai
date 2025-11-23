@@ -1,15 +1,63 @@
-import { FloatingMenuItem } from "@/components/floating-menu/floating-menu-item";
-import { ShapeControls } from "@/components/shape-controls";
-import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
-import { Button } from "@creative-ds/ui";
-import { PlusIcon, ShapesIcon, TextTIcon } from "@phosphor-icons/react";
-import { CircleIcon } from "lucide-react";
-import { useRef } from "react";
-import { BackgroundController } from "../controllers/background-controller";
-import { TextController } from "../controllers/text-controller";
 import bgColorSvg from "@/assets/bg-color.svg";
-import { TextElement } from "./text-element";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShapeControls } from "@/components/shape-controls";
 import { colorConfigToCss } from "@/lib/gradient-utils";
+import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
+import { ShapesIcon, TextTIcon } from "@phosphor-icons/react";
+import { useRef } from "react";
+import { BackgroundController } from "../../controllers/background-controller";
+import { TextController } from "../../controllers/text-controller";
+import { TextElement } from "./text-element";
+import { FloatingMenuItem } from "../../menu/floating-menu/floating-menu-item";
+import { FiltersController } from "../../controllers/filters-controller";
+import { useState } from "react";
+import { filters } from "@/lib/filters";
+import sampleImage from "@/assets/sample-image.png";
+const BackgroundMenu = () => {
+  const filter = useCanvasStore((state) => state.canvasFilter);
+  const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
+
+  const [activeFilter, setActiveFilter] = useState(filter);
+  const imageUrl = useCanvasStore((state) => state.canvasBgColor);
+
+  const handleFilterSelect = (filterId: typeof filters[number]["id"]) => {
+    setActiveFilter(filterId);
+    const filter = filters.find((f) => f.id === filterId);
+    if (filter) {
+      useCanvasStore.setState({ canvasFilter: filter.id });
+    }
+  };
+
+  const handleIntensityChange = (filterId: typeof filters[number]["id"], value: number) => {
+    console.log({ filterId, value });
+    useCanvasStore.setState({ canvasFilterIntensities: { ...filterIntensities!, [filterId]: value } });
+  };
+
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <Tabs defaultValue="background" className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="background" className="flex-1">Background</TabsTrigger>
+          <TabsTrigger value="filters" className="flex-1">Filters</TabsTrigger>
+        </TabsList>
+        <TabsContent value="background">
+          <BackgroundController />
+        </TabsContent>
+        <TabsContent value="filters">
+          <FiltersController
+            filters={filters}
+            activeFilter={activeFilter || "original"}
+            filterIntensities={filterIntensities}
+            onFilterSelect={handleFilterSelect}
+            onIntensityChange={handleIntensityChange}
+            previewImage={imageUrl?.type === "image" ? imageUrl.value : sampleImage}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
 
 interface ElemetsComponentProps {
   selectedIds?: string[];
@@ -49,10 +97,10 @@ const Element = ({
   const bgColor = element.config.style.backgroundColor;
   const cssBackground = bgColor
     ? colorConfigToCss(
-        bgColor,
-        element.config.size.width,
-        element.config.size.height,
-      )
+      bgColor,
+      element.config.size.width,
+      element.config.size.height,
+    )
     : undefined;
 
   return (
@@ -138,8 +186,8 @@ export const Menu = () => {
         open={
           selectedElements.length > 0
             ? !!selectedElements.find(
-                (e) => e.type === "rectangle" || e.type === "circle",
-              )?.id
+              (e) => e.type === "rectangle" || e.type === "circle",
+            )?.id
             : false
         }
       />
@@ -156,9 +204,8 @@ export const Menu = () => {
       />
 
       <FloatingMenuItem
-        contentTitle="Controles de Background"
         trigger={<img src={bgColorSvg} className="size-4.5 " />}
-        menuContent={<BackgroundController />}
+        menuContent={<BackgroundMenu />}
         open={bgSlected}
       />
     </div>

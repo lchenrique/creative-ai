@@ -10,8 +10,8 @@ import { canvasActions } from "./canvas-actions";
 import { Editable } from "./editable-able";
 import { Elements, Menu } from "./elements/elements";
 import { ClipPathEditor } from "./path-editor/path-editor";
-import { useCanvasKeyboard } from "./hooks/use-canvas-keyboard";
-import { useClipPathEditor } from "./hooks/use-clip-path-editor";
+import { useCanvasKeyboard } from "./path-editor/hooks/use-canvas-keyboard";
+import { useClipPathEditor } from "./path-editor/hooks/use-clip-path-editor";
 import {
   handleTextResize,
   handleTextResizeStart,

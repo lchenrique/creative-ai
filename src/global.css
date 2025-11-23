@@ -210,10 +210,12 @@
 body {
     letter-spacing: var(--tracking-normal);
 }
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
     }
+
     body {
         @apply bg-background text-foreground;
     }
@@ -229,6 +231,7 @@ body {
     from {
         left: -75%;
     }
+
     to {
         left: 125%;
     }
@@ -243,11 +246,9 @@ body {
     display: block;
     width: 50%;
     height: 100%;
-    background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.3) 100%
-    );
+    background: linear-gradient(to right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.3) 100%);
     transform: skewX(-25deg);
     animation: shine 1.5s linear infinite;
 }
@@ -294,6 +295,7 @@ body {
     background-color: var(--color-accent) !important;
     border: 2px solid var(--color-accent) !important;
 }
+
 .moveable-control.moveable-clip-control {
     background-color: var(--color-background) !important;
     border: 2px solid var(--color-accent) !important;
@@ -313,6 +315,7 @@ body {
     border: 1px solid var(--color-primary) !important;
     margin-top: -20px !important;
 }
+
 .moveable-e {
     margin-left: -4px !important;
 }

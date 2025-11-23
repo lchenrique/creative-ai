@@ -45,13 +45,13 @@ const FloatingMenuContent = ({
   return (
     <div
       data-slot="floating-menu-content"
-      className={`absolute top-0 right-0 h-dvh w-[350px] overflow-auto rounded-md border p-4 shadow-md outline-hidden z-90
+      className={`absolute top-0 right-0 h-screen w-[350px] overflow-hidden rounded-md border p-3 shadow-md outline-hidden z-90
         bg-popover text-popover-foreground transform transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
       `}
     >
       {contentTitle && (
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+        <div className="px-6 py-4 ">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
             {contentTitle}
           </h2>
@@ -90,7 +90,7 @@ export const FloatingMenuItem = ({
     } else {
       setIsOpen(false);
     }
-  }, [open, shouldRender  ]);
+  }, [open, shouldRender]);
 
   const toggleOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();

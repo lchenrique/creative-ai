@@ -1,19 +1,20 @@
 import { create } from "zustand";
 import type { GradientState } from "@/types/gradient";
+import type { filters } from "@/lib/filters";
 
 export type ColorConfig =
   | {
-      type: "solid";
-      value: string;
-    }
+    type: "solid";
+    value: string;
+  }
   | {
-      type: "gradient";
-      value: GradientState;
-    }
+    type: "gradient";
+    value: GradientState;
+  }
   | {
-      type: "image";
-      value: string;
-    };
+    type: "image";
+    value: string;
+  };
 
 // Path point types for clip-path editor
 export interface PathPoint {
@@ -71,7 +72,11 @@ interface CanvasStore {
   updateElementConfig?: (id: string, newConfig: Partial<ElementConfig>) => void;
   removeElement?: (id: string) => void;
   canvasBgColor?: ColorConfig;
+  canvasFilter?: typeof filters[number]["id"]
+  canvasFilterIntensities?: Record<typeof filters[number]["id"], number> | undefined;
+  setCanvasFilter?: (filter: typeof filters[number]["id"]) => void;
   setCanvasBgColor?: (colorConfig: ColorConfig) => void;
+  setCanvasFilterIntensities?: (intensities: Record<typeof filters[number]["id"], number>) => void;
   bgSlected?: boolean;
   setBgSlected?: (selected: boolean) => void;
 }
@@ -80,7 +85,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   elements: [],
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   canvasBgColor: { type: "solid", value: "#ffffff" },
+  canvasFilter: "original",
+  canvasFilterIntensities: {} as Record<typeof filters[number]["id"], number>,
+  setCanvasFilter: (filter) => set({ canvasFilter: filter }),
   setCanvasBgColor: (colorConfig) => set({ canvasBgColor: colorConfig }),
+  setCanvasFilterIntensities: (intensities) => set({ canvasFilterIntensities: intensities }),
   bgSlected: false,
   setBgSlected: (selected) => set({ bgSlected: selected }),
   addElement: (type) => {

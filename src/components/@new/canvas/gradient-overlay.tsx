@@ -23,13 +23,13 @@ const angleToCoords = (angle: number, width: number, height: number) => {
   };
 };
 
-export const GradientOverlay = ({
+export const  = ({
   value,
   onChange,
   children,
 }: GradientOverlayProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 320, height: 200 });
+  const [dimensions, setDimensions] = useState({ width:320, height: 200 });
 
   const [type, setType] = useState<"linear" | "radial">("linear");
   const [stops, setStops] = useState([
@@ -147,8 +147,8 @@ export const GradientOverlay = ({
           .join(", ")})`;
   };
 
-    // Call onChange when state changes
-    useEffect(() => {
+  // Call onChange when state changes
+  useEffect(() => {
     if (onChange) {
       onChange(generateGradientCSS());
     }
