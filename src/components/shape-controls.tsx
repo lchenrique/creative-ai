@@ -5,8 +5,11 @@ import type { ColorConfig } from "@/stores/canva-store";
 import { useCanvasStore } from "@/stores/canva-store";
 import { useEffect, useRef, useState } from "react";
 import GradientControl from "./gradient-control";
+import { Section } from "./@new/section";
+import { MixBlendMode } from "./@new/controllers/mix-bland";
 
 export const ShapeControls = () => {
+  const [activeSection, setActiveSection] = useState("")
   const selectedIds = useCanvasStore((state) => state.selectedIds);
 
   const elements = useCanvasStore((state) => state.elements);
@@ -20,9 +23,11 @@ export const ShapeControls = () => {
     value: "#FFFFFF",
   });
   const [activeFilter, setActiveFilter] = useState<typeof filters[number]["id"] | null>(null);
+  const [activeMixBlendMode, setActiveMixBlendMode] = useState<MixBlendMode | null>(null);
 
   // Ref para guardar o ID atual sem causar re-render
   const currentIdRef = useRef<string | null>(null);
+
 
   // Sincroniza o estado local APENAS quando mudar o ID selecionado
   useEffect(() => {
@@ -34,6 +39,7 @@ export const ShapeControls = () => {
       if (freshElement?.config.style.backgroundColor) {
         setCurrentColorConfig(freshElement.config.style.backgroundColor);
         setActiveFilter(freshElement.config.filter || "original");
+        setActiveMixBlendMode(freshElement.config.style.mixBlendMode || "normal");
       }
       currentIdRef.current = selectedId;
     } else if (!selectedId) {
@@ -45,52 +51,82 @@ export const ShapeControls = () => {
   return (
     <div
       data-slot="floating-menu-content"
-      className="w-full h-full flex flex-col overflow-hidden"
+      className="w-full h-full flex flex-col "
     >
       {/* Content */}
       <div className="flex-1 overflow-y-auto space-y-6">
         {/* SEÇÃO: COR E PREENCHIMENTO (sempre mostrar) */}
         <div className="flex flex-col gap-2">
-          <GradientControl
-            label="Cor de Fundo"
-            colorConfig={currentColorConfig}
-            setColorConfig={(newConfig) => {
-              // Atualiza o estado local
-              setCurrentColorConfig(newConfig);
+          <Section
+            title="Cor de Fundo"
+            onToggle={() => setActiveSection(activeSection === "color" ? "style" : "color")}
+            isExpanded={activeSection === "color"}
+          >
+            <GradientControl
+              label="Cor de Fundo"
+              colorConfig={currentColorConfig}
+              setColorConfig={(newConfig) => {
+                // Atualiza o estado local
+                setCurrentColorConfig(newConfig);
 
-              // Atualiza todos os elementos selecionados
-              selectedIds.forEach((id) => {
-                updateElementConfig?.(id, {
-                  style: {
-                    backgroundColor: newConfig,
-                  },
+                // Atualiza todos os elementos selecionados
+                selectedIds.forEach((id) => {
+                  updateElementConfig?.(id, {
+                    style: {
+                      backgroundColor: newConfig,
+                    },
+                  });
                 });
-              });
-            }}
-            enableImage
-            previewImage={currentColorConfig.type === "image" ? currentColorConfig.value : ""}
-            intensity={elements[selectedIds[0]]?.config.filterIntensities}
-            setSelectedFilter={(filterId) => {
-              setActiveFilter(filterId)
-              selectedIds.forEach((id) => {
-                updateElementConfig?.(id, {
-                  filter: filterId,
+              }}
+              enableImage
+              previewImage={currentColorConfig.type === "image" ? currentColorConfig.value : ""}
+              intensity={elements[selectedIds[0]]?.config.filterIntensities}
+              setSelectedFilter={(filterId) => {
+                setActiveFilter(filterId)
+                selectedIds.forEach((id) => {
+                  updateElementConfig?.(id, {
+                    filter: filterId,
+                  });
                 });
-              });
-            }}
-            selectedFilter={activeFilter || "original"}
-            onIntensityChange={(filterId, value) => {
-              selectedIds.forEach((id) => {
-                updateElementConfig?.(id, {
-                  filterIntensities: {
-                    ...elements[id]?.config.filterIntensities,
-                    [filterId]: value,
-                  },
+              }}
+              selectedFilter={activeFilter || "original"}
+              onIntensityChange={(filterId, value) => {
+                selectedIds.forEach((id) => {
+                  updateElementConfig?.(id, {
+                    filterIntensities: {
+                      ...elements[id]?.config.filterIntensities,
+                      [filterId]: value,
+                    },
+                  });
                 });
-              });
-            }}
+              }}
 
-          />
+            />
+          </Section>
+
+          <Section
+            title="Mix Blend Mode"
+            onToggle={() => setActiveSection(activeSection === "mixBlendMode" ? "style" : "mixBlendMode")}
+            isExpanded={activeSection === "mixBlendMode"}
+
+          >
+            <div className="max-h-[calc(100vh-600px)] overflow-auto">
+              <MixBlendMode
+                mixBlendMode={activeMixBlendMode || "normal"}
+                onMixBlendModeChange={(value) => {
+                  selectedIds.forEach((id) => {
+                    updateElementConfig?.(id, {
+                      style: {
+                        mixBlendMode: value
+                      }
+                    });
+                  });
+                  setActiveMixBlendMode(value)
+                }}
+              />
+            </div>
+          </Section>
+
         </div>
 
         {/* SEÇÃO: CORES DO SVG (se for clipart) */}

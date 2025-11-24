@@ -276,7 +276,7 @@ export default function Canvas() {
 
         if (isCurrentlySelected && flatted.length === 1) {
           // Verificar se é um elemento de texto
-          const element = clippableId ? elements[clippableId] : null;
+          const element = targetId ? elements[targetId] : null;
           if (element?.type === "text") {
             // Ativar modo de edição de texto
             setEditingTextId(targetId);
@@ -405,7 +405,9 @@ export default function Canvas() {
   const isRoundableSelected = React.useMemo(() => {
     if (selectedIds.length !== 1) return false;
 
-    return elements[selectedElement.id]?.type === "circle" || elements[selectedElement.id]?.type === "rectangle";
+    return elements[selectedElement.id]?.type === "circle"
+      || elements[selectedElement.id]?.type === "rectangle"
+      || elements[selectedElement.id]?.type === "image";
   }, [selectedIds, elements, selectedElement]);
 
   return (

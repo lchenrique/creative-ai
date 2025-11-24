@@ -57,6 +57,9 @@ export interface ElementConfig {
     textShadow?: string;
     // Stroke (WebkitTextStroke)
     WebkitTextStroke?: string;
+    // Mix Blend Mode
+    mixBlendMode?: string;
+    opacity?: number;
   };
 }
 
@@ -169,12 +172,22 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           style: {
             backgroundColor: { type: "solid", value: randomHexColor() },
             borderRadius:
-              "25px 25.5px 24.5px 24.9115px / 25.5px 25.5px 24.5px 24.5px",
+              "118px 118.5px 116.799px 118.201px / 115.5px 118.004px 119.996px 115.5px",
           },
         },
       },
       text: {
         config: textPresets[variant ?? "body"],
+      },
+      image: {
+        config: {
+          size: { width: 300, height: 300 },
+          position: { x: 0, y: 0 },
+          style: {
+            backgroundColor: { type: "image", value: "" },
+          }
+
+        },
       },
     };
 

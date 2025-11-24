@@ -18,9 +18,13 @@ const ImageSkeleton = () => (
 export const ImageSelector = ({
     value,
     onChange,
+    className,
+    perPage
 }: {
     value: string;
     onChange: (value: string) => void;
+    className?: string;
+    perPage?: number;
 }) => {
 
     const [searchInput, setSearchInput] = useState("");
@@ -38,7 +42,7 @@ export const ImageSelector = ({
         search,
     } = useImages({
         query: debouncedQuery,
-        perPage: 18,
+        perPage: perPage || 18,
     });
 
     // Debounce search input
@@ -55,7 +59,7 @@ export const ImageSelector = ({
         onChange(url);
     };
 
-    const selectedUrl = value;
+    const selectedUrl = typeof value === 'string' && value?.startsWith("http") ? value : "";
 
     return (
         <div>
@@ -75,7 +79,7 @@ export const ImageSelector = ({
             </div>
 
             {/* Images Grid */}
-            <div className="min-h-[200px] ">
+            <div className="min-h-[200px] mt-2">
                 {loading ? (
                     <ImageSkeleton />
                 ) : error ? (
@@ -88,7 +92,7 @@ export const ImageSelector = ({
                     </div>
                 ) : (
                     <div className={cn("grid grid-cols-3 gap-2  overflow-y-auto",
-                        selectedUrl ? "max-h-[calc(100vh-435px)]" : "h-full"
+                        !className ? selectedUrl ? "max-h-[calc(100vh-435px)]" : "h-full" : className,
 
                     )}>
                         {images.map((image) => (

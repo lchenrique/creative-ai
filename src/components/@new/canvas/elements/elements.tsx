@@ -5,58 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { filters } from "@/lib/filters";
 import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
 import { ShapesIcon, TextTIcon } from "@phosphor-icons/react";
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { BackgroundController } from "../../controllers/background-controller";
 import { TextController } from "../../controllers/text-controller";
 import { FilterSelector } from "../../image-selector/filter-selector";
 import { FloatingMenuItem } from "../../menu/floating-menu/floating-menu-item";
 import { ShapeElement } from "./shape-elemen";
 import { TextElement } from "./text-element";
-const BackgroundMenu = () => {
-  const filter = useCanvasStore((state) => state.canvasFilter);
-  const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
-
-  const [activeFilter, setActiveFilter] = useState(filter);
-  const imageUrl = useCanvasStore((state) => state.canvasBgColor);
-
-  const handleFilterSelect = (filterId: typeof filters[number]["id"]) => {
-    setActiveFilter(filterId);
-    const filter = filters.find((f) => f.id === filterId);
-    if (filter) {
-      useCanvasStore.setState({ canvasFilter: filter.id });
-    }
-  };
-
-  const handleIntensityChange = (filterId: typeof filters[number]["id"], value: number) => {
-    console.log({ filterId, value });
-    useCanvasStore.setState({ canvasFilterIntensities: { ...filterIntensities!, [filterId]: value } });
-  };
-
-
-  return (
-    <div className="w-full flex flex-col ">
-
-      <Tabs defaultValue="background" className="w-full">
-        <TabsList className="w-full">
-          <TabsTrigger value="background" className="flex-1">Background</TabsTrigger>
-          <TabsTrigger value="filters" className="flex-1">Filters</TabsTrigger>
-        </TabsList>
-        <TabsContent value="background" >
-          <BackgroundController />
-        </TabsContent>
-        <TabsContent value="filters">
-          <FilterSelector
-            value={activeFilter || "original"}
-            onChange={handleFilterSelect}
-            intensity={filterIntensities}
-            onIntensityChange={handleIntensityChange}
-            previewImage={imageUrl?.type === "image" ? imageUrl.value : sampleImage}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
+import { ImageElement } from "./image-element";
+import { ImageController } from "../../controllers/image-controller";
 
 interface ElemetsComponentProps {
   selectedIds?: string[];
@@ -78,7 +35,7 @@ const Element = ({
   onTextChange,
 }: ElementProps) => {
   const ref = useRef<HTMLDivElement>(null);
-
+  console.log({ element });
   if (!element) return null;
 
   if (element.type === "text") {
@@ -91,6 +48,10 @@ const Element = ({
         onTextChange={onTextChange}
       />
     );
+  }
+
+  if (element.type === "image") {
+    return <ImageElement element={element} />;
   }
 
   return (
@@ -129,6 +90,8 @@ export const Elements = ({
                 height: element.config.size?.height || 120,
                 borderRadius: element.config.style.borderRadius,
                 clipPath: element.config.style.clipPath || undefined,
+                mixBlendMode: element.config.style.mixBlendMode as CSSProperties["mixBlendMode"] || "normal",
+                opacity: element.config.style.opacity,
               }}
             >
               <Element
@@ -184,9 +147,16 @@ export const Menu = () => {
       />
 
       <FloatingMenuItem
+        contentTitle="Controles de Background"
         trigger={<img src={bgColorSvg} className="size-4.5 " />}
-        menuContent={<BackgroundMenu />}
+        menuContent={<BackgroundController />}
         open={bgSlected}
+      />
+      <FloatingMenuItem
+        contentTitle="Controles de Imagem"
+        trigger={<img src={bgColorSvg} className="size-4.5 " />}
+        menuContent={<ImageController />}
+        open={selectedElements.length > 0 && !!selectedElements.find((e) => e.type === "image")?.id}
       />
     </div>
   );

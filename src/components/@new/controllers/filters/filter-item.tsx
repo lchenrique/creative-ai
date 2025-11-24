@@ -39,7 +39,7 @@ export const FilterItem = ({
                     <img
                         src={previewImage}
                         alt={name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                         style={{ filter: cssFilter }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />

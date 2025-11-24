@@ -30,7 +30,6 @@ export const BackgroundController = () => {
   };
 
   const handleIntensityChange = (filterId: typeof filters[number]["id"], value: number) => {
-    console.log({ filterId, value });
     useCanvasStore.setState({ canvasFilterIntensities: { ...(filterIntensities || {}), [filterId]: value } });
   };
 

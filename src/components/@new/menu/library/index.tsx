@@ -2,12 +2,9 @@
 import * as React from "react"
 import { Search, X, ChevronRight, ImageIcon, Type, Shapes, Sticker, Upload } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import abstractCode from "@/assets/abstract-code-flow.png"
-import lushForest from "@/assets/lush-forest-stream.png"
-import majesticMountain from "@/assets/majestic-mountain-range.png"
-import vastOcean from "@/assets/vast-blue-ocean.png"
-import vibrantCity from "@/assets/vibrant-cityscape.png"
-import { useCanvasStore, type ElementConfig } from "@/stores/canva-store"
+import { useCanvasStore, type ElementsProps } from "@/stores/canva-store"
+import { useImages } from "@/hooks/useImages"
+import { ImageSelector } from "@/components/@new/image-selector"
 
 export function LibrarySidebar() {
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -18,8 +15,16 @@ export function LibrarySidebar() {
         stickers: true,
         uploads: false,
     })
+    const [showImageSelector, setShowImageSelector] = React.useState(false)
+    const [selectedImageUrl, setSelectedImageUrl] = React.useState("")
 
     const addElement = useCanvasStore((s) => s.addElement)
+
+    // Fetch first 5 images
+    const { images, loading } = useImages({
+        query: "",
+        perPage: 5,
+    })
 
     const toggleSection = (section: string) => {
         setExpandedSections((prev) => ({
@@ -29,7 +34,6 @@ export function LibrarySidebar() {
     }
 
     const handleAddText = (type: "heading" | "title" | "body") => {
-
         addElement?.("text", type)
     }
 
@@ -39,6 +43,41 @@ export function LibrarySidebar() {
 
     const handleAddCircle = () => {
         addElement?.("circle")
+    }
+
+    const handleImageSelect = (url: string) => {
+        setSelectedImageUrl(url)
+
+        // Add image element
+        const currentElements = useCanvasStore.getState().elements
+        const newId = Math.random().toString(36).substr(2, 9)
+
+        // Create new image element
+        const newElement: ElementsProps = {
+            id: newId,
+            type: "image",
+            config: {
+                size: { width: 300, height: 300 },
+                position: { x: 0, y: 0 },
+                style: {
+                    backgroundColor: { type: "image", value: url },
+                },
+            },
+        }
+
+        // Add to store
+        useCanvasStore.setState({
+            elements: {
+                ...currentElements,
+                [newId]: newElement,
+            },
+        })
+
+        setShowImageSelector(false)
+    }
+
+    const handleViewAllImages = () => {
+        setShowImageSelector(true)
     }
 
     return (
@@ -73,21 +112,38 @@ export function LibrarySidebar() {
                     {/* Images Section */}
                     <Section
                         title="Images"
-                        count={15}
+                        count={images.length}
                         icon={<ImageIcon className="h-4 w-4" />}
                         isExpanded={expandedSections.images}
                         onToggle={() => toggleSection("images")}
                     >
-                        <div className="grid grid-cols-3 gap-2">
-                            <ImageItem src={abstractCode} alt="Code" />
-                            <ImageItem src={lushForest} alt="Nature" />
-                            <ImageItem src={majesticMountain} alt="Mountain" />
-                            <ImageItem src={vastOcean} alt="Ocean" />
-                            <ImageItem src={vibrantCity} alt="City" />
-                            <div className="flex aspect-square items-center justify-center rounded-md bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer border border-dashed border-border">
-                                <span className="text-xs font-medium">View all</span>
+                        {loading ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="aspect-square rounded-md bg-muted animate-pulse"
+                                    />
+                                ))}
                             </div>
-                        </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                                {images.slice(0, 5).map((image) => (
+                                    <ImageItem
+                                        key={image.id}
+                                        src={image.thumbnail}
+                                        alt={image.alt || "Image"}
+                                        onClick={() => handleImageSelect(image.url)}
+                                    />
+                                ))}
+                                <div
+                                    onClick={handleViewAllImages}
+                                    className="flex aspect-square items-center justify-center rounded-md bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer border border-dashed border-border"
+                                >
+                                    <span className="text-xs font-medium">View all</span>
+                                </div>
+                            </div>
+                        )}
                     </Section>
 
                     {/* Text Section */}
@@ -173,6 +229,29 @@ export function LibrarySidebar() {
 
                 </div>
             </div>
+
+            {/* Image Selector Modal */}
+            {showImageSelector && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <div className="relative w-full max-w-2xl h-full bg-background rounded-r-lg shadow-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold">Select Image</h3>
+                            <button
+                                onClick={() => setShowImageSelector(false)}
+                                className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <ImageSelector
+                            value={selectedImageUrl}
+                            onChange={handleImageSelect}
+                            className="h-full"
+                            perPage={21}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -226,13 +305,17 @@ function Section({
     )
 }
 
-function ImageItem({ src, alt }: { src: string; alt: string }) {
+function ImageItem({ src, alt, onClick }: { src: string; alt: string; onClick?: () => void }) {
     return (
-        <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-md bg-muted">
+        <div
+            onClick={onClick}
+            className="group relative aspect-square cursor-pointer overflow-hidden rounded-md bg-muted"
+        >
             <img
                 src={src || "/placeholder.svg"}
                 alt={alt}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                loading="lazy"
             />
             <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
         </div>
