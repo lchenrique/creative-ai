@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import {
-    type PathPoint,
+    type Point,
     distance,
     distanceToLineSegment,
     findClosestPointOnBezier,
@@ -10,6 +10,7 @@ import {
     generateClipPath,
     generateClipPathPath,
 } from '@/lib/geometry-utils'
+import type { PathPoint } from '@/stores/canva-store'
 
 interface DragState {
     type: 'point' | 'cp1' | 'cp2' | null
@@ -19,10 +20,54 @@ interface DragState {
 interface ClipPathEditorProps {
     width?: number
     height?: number
+    rotation?: number   // Rotation angle in degrees from the parent element
     value?: string
     pathPoints?: PathPoint[]
     onChange?: (clipPath: string) => void
     onClose?: (polygonClipPath: string, pathPoints?: PathPoint[]) => void
+}
+
+// Function to get local coordinates from mouse event, handling rotation and scale
+function getLocalCoordinates(
+    clientX: number,
+    clientY: number,
+    rect: DOMRect,
+    width: number,
+    height: number,
+    rotation: number
+) {
+    // 1. Find center of the element in screen space
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    // 2. Vector from center to mouse
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+
+    // 3. Calculate scale factor
+    // Theoretical AABB size if scale was 1
+    const rad = rotation * (Math.PI / 180);
+    const absCos = Math.abs(Math.cos(rad));
+    const absSin = Math.abs(Math.sin(rad));
+
+    const expectedWidth = width * absCos + height * absSin;
+    // Avoid division by zero
+    const scale = expectedWidth > 0 ? rect.width / expectedWidth : 1;
+
+    // 4. Rotate vector by -rotation to align with local axes
+    // We also divide by scale to get back to local CSS pixels
+    const angle = -rad;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const rx = (dx * cos - dy * sin) / scale;
+    const ry = (dx * sin + dy * cos) / scale;
+
+    // 5. Add local center to get coordinates relative to top-left (0,0)
+    return {
+        x: rx + width / 2,
+        y: ry + height / 2
+    };
 }
 
 // Parse polygon string to points
@@ -52,7 +97,7 @@ function parsePolygonToPoints(polygon: string, width: number, height: number): P
     })
 }
 
-export function ClipPathEditor({ width, height, value, pathPoints: initialPathPoints, onChange, onClose }: ClipPathEditorProps) {
+export function ClipPathEditor({ width, height, rotation = 0, value, pathPoints: initialPathPoints, onChange, onClose }: ClipPathEditorProps) {
     const CANVAS_WIDTH = width || 450
     const CANVAS_HEIGHT = height || 800
     const POINT_RADIUS = 6
@@ -119,10 +164,10 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
                 setPoints(parsePolygonToPoints(value, CANVAS_WIDTH, CANVAS_HEIGHT))
             } else {
                 setPoints([
-                    { id: '1', x: 0, y: 0, type: 'line' },
-                    { id: '2', x: CANVAS_WIDTH, y: 0, type: 'line' },
-                    { id: '3', x: CANVAS_WIDTH, y: CANVAS_HEIGHT, type: 'line' },
-                    { id: '4', x: 0, y: CANVAS_HEIGHT, type: 'line' },
+                    { id: '1', x: 0, y: 0, type: 'line' } as PathPoint,
+                    { id: '2', x: CANVAS_WIDTH, y: 0, type: 'line' } as PathPoint,
+                    { id: '3', x: CANVAS_WIDTH, y: CANVAS_HEIGHT, type: 'line' } as PathPoint,
+                    { id: '4', x: 0, y: CANVAS_HEIGHT, type: 'line' } as PathPoint,
                 ])
             }
             initialized.current = true
@@ -237,8 +282,14 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             if (!canvasRef.current) return
 
             const rect = canvasRef.current.getBoundingClientRect()
-            const x = e.clientX - rect.left
-            const y = e.clientY - rect.top
+            const { x, y } = getLocalCoordinates(
+                e.clientX,
+                e.clientY,
+                rect,
+                CANVAS_WIDTH,
+                CANVAS_HEIGHT,
+                rotation
+            )
 
             // Check if clicking on a point
             for (const point of points) {
@@ -288,7 +339,7 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             // Deselect if clicking on empty space
             setSelectedPoint(null)
         },
-        [points, getSegmentAtPosition]
+        [points, getSegmentAtPosition, CANVAS_WIDTH, CANVAS_HEIGHT, POINT_RADIUS, HANDLE_RADIUS, rotation]
     )
 
     // Handle mouse move for dragging and hovering
@@ -297,8 +348,14 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             if (!canvasRef.current) return
 
             const rect = canvasRef.current.getBoundingClientRect()
-            const x = e.clientX - rect.left
-            const y = e.clientY - rect.top
+            const { x, y } = getLocalCoordinates(
+                e.clientX,
+                e.clientY,
+                rect,
+                CANVAS_WIDTH,
+                CANVAS_HEIGHT,
+                rotation
+            )
 
             if (dragState.type && dragState.pointId) {
                 // Apply snap to guidelines
@@ -335,7 +392,7 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             const segmentIndex = getSegmentAtPosition(x, y)
             setHoveredSegment(segmentIndex)
         },
-        [dragState, CANVAS_WIDTH, CANVAS_HEIGHT, getSegmentAtPosition]
+        [dragState, CANVAS_WIDTH, CANVAS_HEIGHT, getSegmentAtPosition, snapToGuidelines, rotation]
     )
 
     // Handle mouse up
@@ -350,8 +407,14 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             if (!canvasRef.current || !dragState.type || !dragState.pointId) return
 
             const rect = canvasRef.current.getBoundingClientRect()
-            const x = e.clientX - rect.left
-            const y = e.clientY - rect.top
+            const { x, y } = getLocalCoordinates(
+                e.clientX,
+                e.clientY,
+                rect,
+                CANVAS_WIDTH,
+                CANVAS_HEIGHT,
+                rotation
+            )
 
             // Apply snap to guidelines
             const snapped = snapToGuidelines(x, y)
@@ -393,7 +456,7 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             window.removeEventListener('mousemove', handleGlobalMouseMove)
             window.removeEventListener('mouseup', handleGlobalMouseUp)
         }
-    }, [dragState, snapToGuidelines])
+    }, [dragState, snapToGuidelines, CANVAS_WIDTH, CANVAS_HEIGHT, rotation])
 
     // Handle double click on point to remove
     const handlePointDoubleClick = useCallback((pointId: string) => {
@@ -411,8 +474,14 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
             if (!canvasRef.current) return
 
             const rect = canvasRef.current.getBoundingClientRect()
-            const clickX = e.clientX - rect.left
-            const clickY = e.clientY - rect.top
+            const { x: clickX, y: clickY } = getLocalCoordinates(
+                e.clientX,
+                e.clientY,
+                rect,
+                CANVAS_WIDTH,
+                CANVAS_HEIGHT,
+                rotation
+            )
 
             const closestIndex = getSegmentAtPosition(clickX, clickY)
 
@@ -432,7 +501,7 @@ export function ClipPathEditor({ width, height, value, pathPoints: initialPathPo
                 })
             }
         },
-        [getSegmentAtPosition]
+        [getSegmentAtPosition, CANVAS_WIDTH, CANVAS_HEIGHT, rotation]
     )
 
     const generateSVGPath = useCallback(() => {

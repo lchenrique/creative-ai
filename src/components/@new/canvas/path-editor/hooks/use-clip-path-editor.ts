@@ -11,6 +11,8 @@ interface ClippableRect {
   top: number;
   width: number;
   height: number;
+  rotation: number;
+  transform: string; // Full CSS transform from element
 }
 
 /**
@@ -53,13 +55,37 @@ export const useClipPathEditor = ({
     if (!canvas) return null;
 
     const canvasRect = canvas.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect(); // Bounding box (rotated)
+
+    // Extract rotation from transform
+    const transform = el.style.transform || '';
+    let rotation = 0;
+    const rotateMatch = transform.match(/rotate\(([-+]?[0-9]*\.?[0-9]+)deg\)/);
+    if (rotateMatch) {
+      rotation = parseFloat(rotateMatch[1]);
+    }
+
+    // Use offsetWidth/Height for the actual unrotated size
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+
+    // Calculate center of the element relative to canvas
+    const centerX = elRect.left + elRect.width / 2 - canvasRect.left;
+    const centerY = elRect.top + elRect.height / 2 - canvasRect.top;
+
+    // Calculate top-left position for the unrotated overlay to be centered
+    const left = centerX - width / 2;
+    const top = centerY - height / 2;
+
+    console.log('📐 Element Rect:', { width, height, rotation, left, top });
 
     return {
-      left: elRect.left - canvasRect.left,
-      top: elRect.top - canvasRect.top,
-      width: elRect.width,
-      height: elRect.height,
+      left,
+      top,
+      width,
+      height,
+      rotation,
+      transform,
     };
   }, []);
 

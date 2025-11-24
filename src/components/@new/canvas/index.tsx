@@ -486,7 +486,7 @@ export default function Canvas() {
               }
             }}
             onRotate={canvasActions.onRotate}
-            onRotateEnd={(e) => canvasActions.onRotateEnd(e, () => {})}
+            onRotateEnd={(e) => canvasActions.onRotateEnd(e, () => { })}
             snappable={true}
             customClipPath={currentClipPath}
             isDisplaySnapDigit={true}
@@ -552,11 +552,15 @@ export default function Canvas() {
                   width: clippableRect.width,
                   height: clippableRect.height,
                   overflow: "visible",
+                  transform: `rotate(${clippableRect.rotation}deg)`,
+                  transformOrigin: 'center center',
                 }}
               >
+                {/* {clippableRect.rotation} */}
                 <ClipPathEditor
                   width={clippableRect.width}
                   height={clippableRect.height}
+                  rotation={clippableRect.rotation}
                   value={currentClipPath}
                   pathPoints={currentPathPoints}
                   onChange={onClipPathChange}

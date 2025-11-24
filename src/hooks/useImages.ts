@@ -67,7 +67,7 @@ async function fetchImages(
 export function useImages({
   query: initialQuery = "",
   page: initialPage = 1,
-  perPage = 18,
+  perPage = 15,
 }: UseImagesProps = {}): UseImagesReturn {
   const [page, setPage] = useState(initialPage);
   const [query, setQuery] = useState(initialQuery);

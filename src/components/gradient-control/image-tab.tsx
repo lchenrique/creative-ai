@@ -85,7 +85,7 @@ export const ImageTab = ({ colorConfig, setColorConfig }: ImageTabProps) => {
       </div>
 
       {/* Images Grid */}
-      <div className="min-h-[200px]">
+      <div className="min-h-[200px] ">
         {loading ? (
           <ImageSkeleton />
         ) : error ? (
@@ -97,7 +97,10 @@ export const ImageTab = ({ colorConfig, setColorConfig }: ImageTabProps) => {
             Nenhuma imagem encontrada
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className={cn("grid grid-cols-3 gap-2  overflow-y-auto",
+            selectedUrl ? "max-h-[calc(100vh-435px)]" : "h-full"
+
+          )}>
             {images.map((image) => (
               <div
                 key={image.id}
@@ -105,7 +108,7 @@ export const ImageTab = ({ colorConfig, setColorConfig }: ImageTabProps) => {
                 className={cn(
                   "group relative aspect-square cursor-pointer overflow-hidden rounded-md bg-muted",
                   selectedUrl === image.url &&
-                    "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                  "ring-2 ring-primary ring-offset-2 ring-offset-background",
                 )}
               >
                 <img

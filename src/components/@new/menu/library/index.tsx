@@ -36,6 +36,10 @@ export function LibrarySidebar() {
         addElement?.("rectangle")
     }
 
+    const handleAddCircle = () => {
+        addElement?.("circle")
+    }
+
     return (
         <div className="flex h-full w-full flex-col">
             {/* Header */}
@@ -110,6 +114,7 @@ export function LibrarySidebar() {
                     >
                         <div className="grid grid-cols-4 gap-2">
                             <ShapeItem onClick={handleAddRectangle}><div className="h-6 w-6 bg-foreground" /></ShapeItem>
+                            <ShapeItem onClick={handleAddCircle}><div className="h-6 w-6 bg-foreground rounded-full" /></ShapeItem>
                         </div>
                     </Section>
 

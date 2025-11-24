@@ -13,6 +13,9 @@ import { FiltersController } from "../../controllers/filters-controller";
 import { useState } from "react";
 import { filters } from "@/lib/filters";
 import sampleImage from "@/assets/sample-image.png";
+import { Background } from "@/components/art-background";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ShapeElement } from "./shape-elemen";
 const BackgroundMenu = () => {
   const filter = useCanvasStore((state) => state.canvasFilter);
   const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
@@ -35,13 +38,15 @@ const BackgroundMenu = () => {
 
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="w-full flex flex-col ">
+
       <Tabs defaultValue="background" className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="background" className="flex-1">Background</TabsTrigger>
           <TabsTrigger value="filters" className="flex-1">Filters</TabsTrigger>
         </TabsList>
-        <TabsContent value="background">
+        <TabsContent value="background" >
+          {imageUrl?.type === "image" && <Background className="flex relative h-32 p-1 mb-3   overflow-auto" />}
           <BackgroundController />
         </TabsContent>
         <TabsContent value="filters">
@@ -94,30 +99,13 @@ const Element = ({
     );
   }
 
-  const bgColor = element.config.style.backgroundColor;
-  const cssBackground = bgColor
-    ? colorConfigToCss(
-      bgColor,
-      element.config.size.width,
-      element.config.size.height,
-    )
-    : undefined;
-
   return (
-    <div
-      style={{
-        width: element.config.size.width,
-        height: element.config.size.height,
-        left: element.config.position.x,
-        top: element.config.position.y,
-        background: cssBackground,
-      }}
-    />
+    <ShapeElement element={element} />
+
   );
 };
 
 export const Elements = ({
-  selectedIds,
   editingTextId,
   onEditEnd,
 }: ElemetsComponentProps) => {
