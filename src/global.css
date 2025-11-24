@@ -323,3 +323,18 @@ body {
 .moveable-w {
     margin-left: -4px !important;
 }
+
+.moveable-ne,
+.moveable-nw,
+.moveable-se,
+.moveable-sw {
+    z-index: 999 !important;
+}
+
+.moveable-border-radius {
+    border-radius: 999px !important;
+    background: var(--color-accent) !important;
+    width: 10px !important;
+    height: 10px !important;
+    opacity: .5 !important;
+}

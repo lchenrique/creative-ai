@@ -15,6 +15,7 @@ export type ColorConfig =
     type: "image";
     value: string;
   };
+type TextVariant = "heading" | "title" | "body";
 
 // Path point types for clip-path editor
 export interface PathPoint {
@@ -66,12 +67,18 @@ export interface ElementsProps {
   content?: string;
 }
 
+
+export interface Element {
+  [id: string]: ElementsProps;
+}
+
 interface CanvasStore {
-  elements: ElementsProps[];
+  elements: Element;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
-  addElement?: (type: ElementsProps["type"]) => void;
-  updateElementConfig?: (id: string, newConfig: Partial<ElementConfig>) => void;
+  addElement?: (type: ElementsProps["type"], variant?: TextVariant) => void;
+
+  updateElementConfig: (id: string, newConfig: Partial<ElementConfig>) => void;
   removeElement?: (id: string) => void;
   canvasBgColor?: ColorConfig;
   canvasFilter?: typeof filters[number]["id"]
@@ -82,9 +89,50 @@ interface CanvasStore {
   bgSlected?: boolean;
   setBgSlected?: (selected: boolean) => void;
 }
+
+
+const textPresets: Record<TextVariant, ElementConfig> = {
+  heading: {
+    size: { width: 140, height: 48 },
+    position: { x: 0, y: 0 },
+    style: {
+      fontFamily: "Roboto",
+      fontSize: 36,
+      fontWeight: "bold",
+      color: "#000000",
+      text: "Heading",
+      lineHeight: 1.2,
+    },
+  },
+  title: {
+    size: { width: 55, height: 36 },
+    position: { x: 0, y: 0 },
+    style: {
+      fontFamily: "Roboto",
+      fontSize: 24,
+      fontWeight: "bold",
+      color: "#000000",
+      text: "Title",
+      lineHeight: 1.2,
+    },
+  },
+  body: {
+    size: { width: 45, height: 20 },
+    position: { x: 0, y: 0 },
+    style: {
+      fontFamily: "Roboto",
+      fontSize: 16,
+      fontWeight: "normal",
+      color: "#000000",
+      text: "Body",
+      lineHeight: 1.3,
+    },
+  },
+};
+
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedIds: [],
-  elements: [],
+  elements: {} as Element,
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   canvasBgColor: { type: "solid", value: "#ffffff" },
   canvasFilter: "original",
@@ -94,7 +142,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setCanvasFilterIntensities: (intensities) => set({ canvasFilterIntensities: intensities }),
   bgSlected: false,
   setBgSlected: (selected) => set({ bgSlected: selected }),
-  addElement: (type) => {
+  addElement: (type, variant) => {
     function randomHexColor() {
       return (
         "#" +
@@ -104,7 +152,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       );
     }
 
-    const elementsTypeToAdd: { [key: string]: { config: ElementConfig } } = {
+    const baseElements: { [key: string]: { config: ElementConfig } } = {
       rectangle: {
         config: {
           size: { width: 100, height: 100 },
@@ -120,61 +168,52 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           position: { x: 0, y: 0 },
           style: {
             backgroundColor: { type: "solid", value: randomHexColor() },
-            borderRadius: "50%"
-            ,
+            borderRadius:
+              "25px 25.5px 24.5px 24.9115px / 25.5px 25.5px 24.5px 24.5px",
           },
         },
       },
       text: {
-        config: {
-          size: { width: 200, height: 50 },
-          position: { x: 0, y: 0 },
-          style: {
-            text: "Texto",
-            fontFamily: "Inter",
-            fontWeight: 400,
-            fontSize: 24,
-            color: "#000000",
-            textAlign: "left",
-            letterSpacing: 0,
-            lineHeight: 1.2,
-          },
-        },
+        config: textPresets[variant ?? "body"],
       },
     };
 
     const newEl: ElementsProps = {
       id: Math.random().toString(36).substr(2, 9),
-      type: type,
-      config: elementsTypeToAdd[type].config,
+      type,
+      config: baseElements[type].config,
     };
 
-    set({ elements: [...get().elements, newEl] });
+    set((state) => ({
+      elements: {
+        ...state.elements,
+        [newEl.id]: newEl,
+      },
+    }));
   },
 
   updateElementConfig: (id, newConfig) => {
     set((state) => ({
-      elements: state.elements.map((el) => {
-        if (el.id === id) {
-          const mergedConfig = {
-            ...el.config,
+      elements: {
+        ...state.elements,
+        [id]: {
+          ...state.elements[id],
+          config: {
+            ...state.elements[id].config,
             ...newConfig,
             style: {
-              ...el.config.style,
+              ...state.elements[id].config.style,
               ...newConfig.style,
             },
-          };
-          return { ...el, config: mergedConfig };
-        }
-        return el;
-      }),
+          },
+        },
+      },
     }));
   },
 
   removeElement: (id) => {
-    set({
-      elements: get().elements.filter((el) => el.id !== id),
-      selectedIds: get().selectedIds.filter((selectedId) => selectedId !== id),
-    });
+    const elements = get().elements;
+    delete elements[id];
+    set({ elements });
   },
 }));

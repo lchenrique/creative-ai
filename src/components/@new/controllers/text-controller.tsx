@@ -108,10 +108,7 @@ export const TextController = () => {
   );
 
   // Find selected text element
-  const selectedElement = elements.find(
-    (el) => selectedIds.includes(el.id) && el.type === "text",
-  );
-
+  const selectedElement = elements[selectedIds[0]];
   // Expanded sections state
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
@@ -174,7 +171,7 @@ export const TextController = () => {
   // Sync local state when selected element changes or element updates
   useEffect(() => {
     const selectedId = selectedIds[0];
-    const freshElement = elements.find((el) => el.id === selectedId);
+    const freshElement = elements[selectedIds[0]];
 
     if (selectedId && freshElement?.type === "text") {
       const style = freshElement.config.style;

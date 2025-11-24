@@ -35,10 +35,13 @@ export default function Canvas() {
   const setBgSlected = useCanvasStore((state) => state.setBgSlected);
   const selectedIds = useCanvasStore((state) => state.selectedIds);
   const setSelectedIds = useCanvasStore((state) => state.setSelectedIds);
-
+  console.log("targets", targets);
 
   // Text editing mode state
   const [editingTextId, setEditingTextId] = React.useState<string | null>(null);
+
+  const selectedElement = elements[selectedIds[0]];
+
 
   // ClipPath editor hook
   const {
@@ -195,7 +198,7 @@ export default function Canvas() {
           const y = ((e.inputEvent.clientY - rect.top) / rect.height) * 100;
 
           // Parse current polygon
-          const element = elements.find((el) => el.id === clippableId);
+          const element = clippableId ? elements[clippableId] : null;
           const clipPath =
             element?.config.style.clipPath ||
             "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
@@ -273,7 +276,7 @@ export default function Canvas() {
 
         if (isCurrentlySelected && flatted.length === 1) {
           // Verificar se é um elemento de texto
-          const element = elements.find((el) => el.id === targetId);
+          const element = clippableId ? elements[clippableId] : null;
           if (element?.type === "text") {
             // Ativar modo de edição de texto
             setEditingTextId(targetId);
@@ -394,16 +397,17 @@ export default function Canvas() {
   // Verificar se o elemento selecionado é texto (para usar scale ao invés de resize)
   const isTextSelected = React.useMemo(() => {
     if (selectedIds.length !== 1) return false;
-    const element = elements.find((el) => el.id === selectedIds[0]);
+    const element = clippableId ? elements[clippableId] : null;
     return element?.type === "text";
   }, [selectedIds, elements]);
 
   // Verificar se o elemento selecionado é circle (para habilitar roundable)
-  const isCircleSelected = React.useMemo(() => {
+  const isRoundableSelected = React.useMemo(() => {
     if (selectedIds.length !== 1) return false;
-    const element = elements.find((el) => el.id === selectedIds[0]);
-    return element?.type === "circle";
-  }, [selectedIds, elements]);
+
+    return elements[selectedElement.id]?.type === "circle" || elements[selectedElement.id]?.type === "rectangle";
+  }, [selectedIds, elements, selectedElement]);
+
   return (
     <div id="canvas-editor" className="root h-full">
       <div className=" h-full w-full flex items-center justify-center">
@@ -443,8 +447,8 @@ export default function Canvas() {
             elementSnapDirections={canvasActions.elementSnapDirections}
             keepRatio={keepRatioForResize}
             // Roundable controls for circle elements
-            roundable={isCircleSelected}
-            isDisplayShadowRoundControls={"horizontal"}
+            roundable={isRoundableSelected}
+            isDisplayShadowRoundControls={true}
             roundClickable={"control"}
             roundPadding={15}
             onRound={e => {
@@ -477,24 +481,24 @@ export default function Canvas() {
             onResize={(e) => {
               const el = e.target as HTMLElement;
               const elementId = el.getAttribute("data-element-id");
+              if (updateElementConfig) {
+                // Tenta processar como texto primeiro
+                const wasTextHandled = handleTextResize(e, {
+                  elements,
+                  updateElementConfig,
+                  moveableRef,
+                });
 
-              // Tenta processar como texto primeiro
-              const wasTextHandled = handleTextResize(e, {
-                elements,
-                updateElementConfig,
-                moveableRef,
-              });
-
-              // Se não foi texto, usa handler padrão
-              if (!wasTextHandled) {
-                canvasActions.onResize(e);
-                if (elementId && updateElementConfig) {
-                  updateElementConfig(elementId, {
-                    size: { width: e.width, height: e.height },
-                  });
+                // Se não foi texto, usa handler padrão
+                if (!wasTextHandled) {
+                  canvasActions.onResize(e);
+                  if (elementId && updateElementConfig) {
+                    updateElementConfig(elementId, {
+                      size: { width: e.width, height: e.height },
+                    });
+                  }
                 }
               }
-
               // Update clippableRect when resizing the clippable element
               if (clippableId && elementId === clippableId) {
                 updateClippableRect(el, { width: e.width, height: e.height });
@@ -555,9 +559,7 @@ export default function Canvas() {
             editingTextId={editingTextId}
             onEditEnd={(elementId, newHeight) => {
               setEditingTextId(null);
-              const element = elements.find(
-                (element) => element.id === elementId,
-              );
+              const element = elements[elementId];
 
               // Atualiza altura após sair do modo edição
               if (elementId && newHeight) {

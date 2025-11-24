@@ -143,7 +143,7 @@ export default function GradientControl({
           <Tabs
             value={tabSelected}
             onValueChange={(value) => {
-              setTabSelected(value);
+              setTabSelected(value as typeof colorConfig.type);
             }}
             className="w-full"
           >

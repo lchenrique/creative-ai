@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import type { ElementsProps, ElementConfig, PathPoint } from "@/stores/canva-store";
+import type { Element, ElementConfig, PathPoint } from "@/stores/canva-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseClipPathEditorProps {
-  elements: ElementsProps[];
-  updateElementConfig: (id: string, config: Partial<ElementConfig>) => void;
+  elements: Element;
+  updateElementConfig: (id: string, newConfig: Partial<ElementConfig>) => void;
 }
 
 interface ClippableRect {
@@ -28,7 +28,7 @@ export const useClipPathEditor = ({
   // Get clipPath for current clippable element
   const currentClipPath = useMemo(() => {
     if (!clippableId) return undefined;
-    const element = elements.find((el) => el.id === clippableId);
+    const element = elements[clippableId];
     return (
       element?.config.style.clipPath ||
       "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
@@ -38,13 +38,13 @@ export const useClipPathEditor = ({
   // Get pathPoints for current clippable element
   const currentPathPoints = useMemo(() => {
     if (!clippableId) return undefined;
-    const element = elements.find((el) => el.id === clippableId);
+    const element = elements[clippableId];
     return element?.config.style.clipPathPoints;
   }, [clippableId, elements]);
 
   // Get element type
   const selectedType = useMemo(() => {
-    return elements.find((element) => element.id === clippableId)?.type;
+    return clippableId ? elements[clippableId]?.type : null;
   }, [clippableId, elements]);
 
   // Helper function to get element rect relative to canvas

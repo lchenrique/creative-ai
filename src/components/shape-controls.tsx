@@ -1,12 +1,10 @@
 "use client";
 
-import { useCanvasStore } from "@/stores/canva-store";
-import { useEffect, useState, useRef } from "react";
-import GradientControl from "./gradient-control";
-import type { ColorConfig } from "@/stores/canva-store";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Background } from "./art-background";
 import type { filters } from "@/lib/filters";
+import type { ColorConfig } from "@/stores/canva-store";
+import { useCanvasStore } from "@/stores/canva-store";
+import { useEffect, useRef, useState } from "react";
+import GradientControl from "./gradient-control";
 
 export const ShapeControls = () => {
   const selectedIds = useCanvasStore((state) => state.selectedIds);
@@ -32,9 +30,7 @@ export const ShapeControls = () => {
 
     if (selectedId && selectedId !== currentIdRef.current) {
       // Mudou o elemento selecionado - pega fresh data direto da store
-      const freshElement = useCanvasStore
-        .getState()
-        .elements.find((el) => el.id === selectedId);
+      const freshElement = elements[selectedId];
       if (freshElement?.config.style.backgroundColor) {
         setCurrentColorConfig(freshElement.config.style.backgroundColor);
         setActiveFilter(freshElement.config.filter || "original");
@@ -73,7 +69,7 @@ export const ShapeControls = () => {
             }}
             enableImage
             previewImage={currentColorConfig.type === "image" ? currentColorConfig.value : ""}
-            intensity={elements.find((el) => el.id === selectedIds[0])?.config.filterIntensities}
+            intensity={elements[selectedIds[0]]?.config.filterIntensities}
             setSelectedFilter={(filterId) => {
               setActiveFilter(filterId)
               selectedIds.forEach((id) => {
@@ -87,7 +83,7 @@ export const ShapeControls = () => {
               selectedIds.forEach((id) => {
                 updateElementConfig?.(id, {
                   filterIntensities: {
-                    ...elements.find((el) => el.id === selectedIds[0])?.config.filterIntensities,
+                    ...elements[id]?.config.filterIntensities,
                     [filterId]: value,
                   },
                 });

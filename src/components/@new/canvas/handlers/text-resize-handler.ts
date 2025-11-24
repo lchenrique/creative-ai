@@ -1,10 +1,10 @@
 import type { OnResize, OnResizeStart } from "react-moveable";
-import type { ElementsProps, ElementConfig } from "@/stores/canva-store";
+import type { ElementsProps, ElementConfig, Element } from "@/stores/canva-store";
 import type Moveable from "react-moveable";
 
 interface TextResizeContext {
-  elements: ElementsProps[];
-  updateElementConfig: (id: string, config: Partial<ElementConfig>) => void;
+  elements: Element;
+  updateElementConfig: (id: string, newConfig: Partial<ElementConfig>) => void;
   moveableRef: React.RefObject<Moveable | null>;
 }
 
@@ -20,12 +20,12 @@ export const isCornerDirection = (direction: number[]): boolean => {
  */
 export const handleTextResizeStart = (
   e: OnResizeStart,
-  elements: ElementsProps[],
+  elements: Element,
   setKeepRatio: (value: boolean) => void,
 ): void => {
   const el = e.target as HTMLElement;
   const elementId = el.getAttribute("data-element-id");
-  const element = elements.find((item) => item.id === elementId);
+  const element = elementId ? elements[elementId] : null;
   const isCorner = isCornerDirection(e.direction);
 
   // Para texto nos cantos: manter ratio
@@ -43,7 +43,7 @@ const handleTextCornerResize = (
   e: OnResize,
   el: HTMLElement,
   elementId: string,
-  element: ElementsProps,
+  element: Element[string],
   textElement: HTMLElement,
   updateElementConfig: TextResizeContext["updateElementConfig"],
 ): void => {
@@ -132,7 +132,7 @@ export const handleTextResize = (
 
   const el = e.target as HTMLElement;
   const elementId = el.getAttribute("data-element-id");
-  const element = elements.find((item) => item.id === elementId);
+  const element = elementId ? elements[elementId] : null;
   const isCorner = isCornerDirection(e.direction);
   const textElement = el.querySelector(
     '[data-element-type="text"]',

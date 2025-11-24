@@ -1,22 +1,17 @@
 import bgColorSvg from "@/assets/bg-color.svg";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import sampleImage from "@/assets/sample-image.png";
 import { ShapeControls } from "@/components/shape-controls";
-import { colorConfigToCss } from "@/lib/gradient-utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { filters } from "@/lib/filters";
 import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
 import { ShapesIcon, TextTIcon } from "@phosphor-icons/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { BackgroundController } from "../../controllers/background-controller";
 import { TextController } from "../../controllers/text-controller";
-import { TextElement } from "./text-element";
-import { FloatingMenuItem } from "../../menu/floating-menu/floating-menu-item";
-import { FiltersController } from "../../controllers/filters-controller";
-import { useState } from "react";
-import { filters } from "@/lib/filters";
-import sampleImage from "@/assets/sample-image.png";
-import { Background } from "@/components/art-background";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShapeElement } from "./shape-elemen";
 import { FilterSelector } from "../../image-selector/filter-selector";
+import { FloatingMenuItem } from "../../menu/floating-menu/floating-menu-item";
+import { ShapeElement } from "./shape-elemen";
+import { TextElement } from "./text-element";
 const BackgroundMenu = () => {
   const filter = useCanvasStore((state) => state.canvasFilter);
   const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
@@ -118,11 +113,12 @@ export const Elements = ({
       style: { text },
     });
   };
+  const ElementsArr = Object.values(elements);
 
   return (
     <>
       <div className="elements selecto-area gap-2 ">
-        {elements.map((element) => {
+        {ElementsArr.map((element) => {
           return (
             <div
               data-element-id={element.id}
@@ -131,9 +127,7 @@ export const Elements = ({
               style={{
                 width: element.config.size?.width || 120,
                 height: element.config.size?.height || 120,
-                borderRadius: element.type === "circle" ? element.config.style.borderRadius : element.config.style.borderRadius
-                  ? `${element.config.style.borderRadius}px`
-                  : undefined,
+                borderRadius: element.config.style.borderRadius,
                 clipPath: element.config.style.clipPath || undefined,
               }}
             >
@@ -153,13 +147,12 @@ export const Elements = ({
 };
 
 export const Menu = () => {
-  const addElement = useCanvasStore((s) => s.addElement);
   const selectedIds = useCanvasStore((s) => s.selectedIds);
   const elements = useCanvasStore((s) => s.elements);
   const bgSlected = useCanvasStore((s) => s.bgSlected);
 
   // Pega os elementos selecionados baseado nos IDs
-  const selectedElements = elements.filter((el) => selectedIds.includes(el.id));
+  const selectedElements = Object.values(elements).filter((el) => selectedIds.includes(el.id));
 
   return (
     <div

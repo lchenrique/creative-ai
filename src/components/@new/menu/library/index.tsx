@@ -7,7 +7,7 @@ import lushForest from "@/assets/lush-forest-stream.png"
 import majesticMountain from "@/assets/majestic-mountain-range.png"
 import vastOcean from "@/assets/vast-blue-ocean.png"
 import vibrantCity from "@/assets/vibrant-cityscape.png"
-import { useCanvasStore } from "@/stores/canva-store"
+import { useCanvasStore, type ElementConfig } from "@/stores/canva-store"
 
 export function LibrarySidebar() {
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -28,8 +28,9 @@ export function LibrarySidebar() {
         }))
     }
 
-    const handleAddText = () => {
-        addElement?.("text")
+    const handleAddText = (type: "heading" | "title" | "body") => {
+
+        addElement?.("text", type)
     }
 
     const handleAddRectangle = () => {
@@ -98,10 +99,25 @@ export function LibrarySidebar() {
                         onToggle={() => toggleSection("text")}
                     >
                         <div className="grid grid-cols-3 gap-2">
-                            <TextItem label="Title" className="text-lg font-bold" onClick={handleAddText} />
-                            <TextItem label="Heading" className="text-sm font-semibold" onClick={handleAddText} />
-                            <TextItem label="Body" className="text-xs text-muted-foreground" onClick={handleAddText} />
+                            <TextItem
+                                label="Heading"
+                                className="text-lg font-bold"
+                                onClick={() => handleAddText("heading")}
+                            />
+
+                            <TextItem
+                                label="Title"
+                                className="text-md font-semibold"
+                                onClick={() => handleAddText("title")}
+                            />
+
+                            <TextItem
+                                label="Body"
+                                className="text-sm text-muted-foreground"
+                                onClick={() => handleAddText("body")}
+                            />
                         </div>
+
                     </Section>
 
                     {/* Shapes Section */}
