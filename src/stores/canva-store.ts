@@ -29,10 +29,12 @@ export interface PathPoint {
 export interface ElementConfig {
   size: { width: number; height: number };
   position: { x: number; y: number };
+  filter?: typeof filters[number]["id"];
+  filterIntensities?: Partial<Record<typeof filters[number]["id"], number>>;
   style: {
     // Background & Border
     backgroundColor?: ColorConfig;
-    borderRadius?: number;
+    borderRadius?: string;
     borderWidth?: number;
     borderColor?: string;
     // Clip path
@@ -73,10 +75,10 @@ interface CanvasStore {
   removeElement?: (id: string) => void;
   canvasBgColor?: ColorConfig;
   canvasFilter?: typeof filters[number]["id"]
-  canvasFilterIntensities?: Record<typeof filters[number]["id"], number> | undefined;
+  canvasFilterIntensities?: Partial<Record<typeof filters[number]["id"], number>>;
   setCanvasFilter?: (filter: typeof filters[number]["id"]) => void;
   setCanvasBgColor?: (colorConfig: ColorConfig) => void;
-  setCanvasFilterIntensities?: (intensities: Record<typeof filters[number]["id"], number>) => void;
+  setCanvasFilterIntensities?: (intensities: Partial<Record<typeof filters[number]["id"], number>>) => void;
   bgSlected?: boolean;
   setBgSlected?: (selected: boolean) => void;
 }
@@ -86,7 +88,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   canvasBgColor: { type: "solid", value: "#ffffff" },
   canvasFilter: "original",
-  canvasFilterIntensities: {} as Record<typeof filters[number]["id"], number>,
+  canvasFilterIntensities: {} as Partial<Record<typeof filters[number]["id"], number>>,
   setCanvasFilter: (filter) => set({ canvasFilter: filter }),
   setCanvasBgColor: (colorConfig) => set({ canvasBgColor: colorConfig }),
   setCanvasFilterIntensities: (intensities) => set({ canvasFilterIntensities: intensities }),
@@ -118,7 +120,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           position: { x: 0, y: 0 },
           style: {
             backgroundColor: { type: "solid", value: randomHexColor() },
-            borderRadius: 50,
+            borderRadius: "50%"
+            ,
           },
         },
       },

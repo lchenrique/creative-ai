@@ -17,8 +17,8 @@ export interface Filter {
 interface FilterSidebarProps {
     filters: typeof filters;
     activeFilter: typeof filters[number]["id"];
-    filterIntensities: Record<typeof filters[number]["id"], number> | undefined;
-    onFilterSelect: (filterId: typeof filters[number]["id"]) => void;
+    filterIntensities: Partial<Record<typeof filters[number]["id"], number>> | undefined;
+    onFilterSelect?: (filterId: typeof filters[number]["id"]) => void;
     onIntensityChange: (filterId: typeof filters[number]["id"], value: number) => void;
     previewImage: string;
 }
@@ -47,7 +47,7 @@ export const FiltersController = ({
                     isActive={activeFilter === filter.id}
                     intensity={filterIntensities?.[filter.id] ?? 100}
                     previewImage={previewImage}
-                    onSelect={() => onFilterSelect(filter.id)}
+                    onSelect={onFilterSelect ? () => onFilterSelect(filter.id) : undefined}
                     onIntensityChange={(value) => onIntensityChange(filter.id, value)}
                 />
             ))}

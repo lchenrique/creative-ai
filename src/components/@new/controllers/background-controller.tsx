@@ -2,6 +2,7 @@ import GradientControl from "@/components/gradient-control";
 import { useCanvasStore } from "@/stores/canva-store";
 import { useEffect, useState, useRef } from "react";
 import type { ColorConfig } from "@/stores/canva-store";
+import { filters } from "@/lib/filters";
 
 export const BackgroundController = () => {
   const setCanvasBgColor = useCanvasStore((state) => state.setCanvasBgColor);
@@ -13,6 +14,26 @@ export const BackgroundController = () => {
   });
 
   const hasLoadedRef = useRef(false);
+
+  const filter = useCanvasStore((state) => state.canvasFilter);
+  const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
+
+  const [activeFilter, setActiveFilter] = useState(filter);
+  const imageUrl = useCanvasStore((state) => state.canvasBgColor);
+
+  const handleFilterSelect = (filterId: typeof filters[number]["id"]) => {
+    setActiveFilter(filterId);
+    const filter = filters.find((f) => f.id === filterId);
+    if (filter) {
+      useCanvasStore.setState({ canvasFilter: filter.id });
+    }
+  };
+
+  const handleIntensityChange = (filterId: typeof filters[number]["id"], value: number) => {
+    console.log({ filterId, value });
+    useCanvasStore.setState({ canvasFilterIntensities: { ...(filterIntensities || {}), [filterId]: value } });
+  };
+
 
   useEffect(() => {
     if (bgSlected && !hasLoadedRef.current) {
@@ -35,7 +56,13 @@ export const BackgroundController = () => {
         setCurrentColorConfig(newConfig);
         setCanvasBgColor?.(newConfig);
       }}
-      enableImage={true}
+      enableImage
+      intensity={filterIntensities}
+      onIntensityChange={handleIntensityChange}
+      previewImage={imageUrl?.type === "image" ? imageUrl.value : ""}
+      selectedFilter={activeFilter}
+      setSelectedFilter={handleFilterSelect}
+
     />
   );
 };

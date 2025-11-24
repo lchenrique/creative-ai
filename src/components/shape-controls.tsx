@@ -4,9 +4,14 @@ import { useCanvasStore } from "@/stores/canva-store";
 import { useEffect, useState, useRef } from "react";
 import GradientControl from "./gradient-control";
 import type { ColorConfig } from "@/stores/canva-store";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { Background } from "./art-background";
+import type { filters } from "@/lib/filters";
 
 export const ShapeControls = () => {
   const selectedIds = useCanvasStore((state) => state.selectedIds);
+
+  const elements = useCanvasStore((state) => state.elements);
   const updateElementConfig = useCanvasStore(
     (state) => state.updateElementConfig,
   );
@@ -16,6 +21,7 @@ export const ShapeControls = () => {
     type: "solid",
     value: "#FFFFFF",
   });
+  const [activeFilter, setActiveFilter] = useState<typeof filters[number]["id"] | null>(null);
 
   // Ref para guardar o ID atual sem causar re-render
   const currentIdRef = useRef<string | null>(null);
@@ -31,6 +37,7 @@ export const ShapeControls = () => {
         .elements.find((el) => el.id === selectedId);
       if (freshElement?.config.style.backgroundColor) {
         setCurrentColorConfig(freshElement.config.style.backgroundColor);
+        setActiveFilter(freshElement.config.filter || "original");
       }
       currentIdRef.current = selectedId;
     } else if (!selectedId) {
@@ -64,6 +71,29 @@ export const ShapeControls = () => {
                 });
               });
             }}
+            enableImage
+            previewImage={currentColorConfig.type === "image" ? currentColorConfig.value : ""}
+            intensity={elements.find((el) => el.id === selectedIds[0])?.config.filterIntensities}
+            setSelectedFilter={(filterId) => {
+              setActiveFilter(filterId)
+              selectedIds.forEach((id) => {
+                updateElementConfig?.(id, {
+                  filter: filterId,
+                });
+              });
+            }}
+            selectedFilter={activeFilter || "original"}
+            onIntensityChange={(filterId, value) => {
+              selectedIds.forEach((id) => {
+                updateElementConfig?.(id, {
+                  filterIntensities: {
+                    ...elements.find((el) => el.id === selectedIds[0])?.config.filterIntensities,
+                    [filterId]: value,
+                  },
+                });
+              });
+            }}
+
           />
         </div>
 
@@ -537,6 +567,6 @@ export const ShapeControls = () => {
           Duplicate
         </Button>
       </div> */}
-    </div>
+    </div >
   );
 };

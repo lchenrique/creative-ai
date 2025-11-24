@@ -7,7 +7,7 @@ interface FilterItemProps {
     isActive: boolean;
     intensity: number;
     previewImage: string;
-    onSelect: () => void;
+    onSelect?: () => void;
     onIntensityChange: (value: number) => void;
 }
 
@@ -29,7 +29,7 @@ export const FilterItem = ({
                 </div>
             )}
             <button
-                onClick={onSelect}
+                onClick={onSelect ? () => onSelect() : undefined}
                 className={`w-full rounded-xl overflow-hidden transition-all ${isActive
                     ? "ring-2 ring-primary shadow-lg"
                     : "hover:ring-1 hover:ring-filter-hover"

@@ -36,6 +36,7 @@ export default function Canvas() {
   const selectedIds = useCanvasStore((state) => state.selectedIds);
   const setSelectedIds = useCanvasStore((state) => state.setSelectedIds);
 
+
   // Text editing mode state
   const [editingTextId, setEditingTextId] = React.useState<string | null>(null);
 
@@ -100,6 +101,24 @@ export default function Canvas() {
     };
   }, []);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setKeepRatioForResize(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        setKeepRatioForResize(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
   const onDragStart = useCallback(
     (e: any) => {
       const moveable = moveableRef.current!;
@@ -378,6 +397,13 @@ export default function Canvas() {
     const element = elements.find((el) => el.id === selectedIds[0]);
     return element?.type === "text";
   }, [selectedIds, elements]);
+
+  // Verificar se o elemento selecionado é circle (para habilitar roundable)
+  const isCircleSelected = React.useMemo(() => {
+    if (selectedIds.length !== 1) return false;
+    const element = elements.find((el) => el.id === selectedIds[0]);
+    return element?.type === "circle";
+  }, [selectedIds, elements]);
   return (
     <div id="canvas-editor" className="root h-full">
       <div className=" h-full w-full flex items-center justify-center">
@@ -416,6 +442,24 @@ export default function Canvas() {
             snapDirections={canvasActions.snapDirections}
             elementSnapDirections={canvasActions.elementSnapDirections}
             keepRatio={keepRatioForResize}
+            // Roundable controls for circle elements
+            roundable={isCircleSelected}
+            isDisplayShadowRoundControls={"horizontal"}
+            roundClickable={"control"}
+            roundPadding={15}
+            onRound={e => {
+              const el = e.target as HTMLElement;
+              const elementId = el.getAttribute("data-element-id");
+              e.target.style.borderRadius = e.borderRadius;
+              console.log(e.borderRadius, elementId);
+              if (elementId && updateElementConfig) {
+                updateElementConfig(elementId, {
+                  style: {
+                    borderRadius: e.borderRadius,
+                  },
+                });
+              }
+            }}
             onDrag={(e) => {
               canvasActions.onDrag(e);
               // Update clippableRect when dragging the clippable element
@@ -487,6 +531,7 @@ export default function Canvas() {
             }}
             onRotate={canvasActions.onRotate}
             onRotateEnd={(e) => canvasActions.onRotateEnd(e, () => { })}
+
             snappable={true}
             customClipPath={currentClipPath}
             isDisplaySnapDigit={true}

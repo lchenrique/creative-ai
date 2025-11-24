@@ -10,6 +10,8 @@ import { GradientPreview } from "../@new/canvas/gradient-preview";
 import { GradientTab } from "./gradient-tab";
 import { SolidColorTab } from "./solid-color-tab";
 import { ImageTab } from "./image-tab";
+import type { filters } from "@/lib/filters";
+import type { FilterSelectorProps } from "../@new/image-selector/filter-selector";
 
 export interface ColorStop {
   id: string;
@@ -35,7 +37,10 @@ export interface GradientConfig {
   radialEnd?: { x: number; y: number };
 }
 
-interface GradientControlProps {
+
+
+
+export interface GradientControlPropsDefault {
   colorConfig: ColorConfig;
   setColorConfig: (colorConfig: ColorConfig) => void;
   enableGradient?: boolean;
@@ -45,6 +50,21 @@ interface GradientControlProps {
   label?: string;
 }
 
+type FilterProps = Omit<FilterSelectorProps, 'onChange' | "value"> & {
+  selectedFilter?: typeof filters[number]["id"];
+  setSelectedFilter?: (filter: typeof filters[number]["id"]) => void;
+};
+
+export type GradientControlProps =
+  | ({
+    enableImage: true;
+  } & GradientControlPropsDefault &
+    FilterProps)
+  | ({
+    enableImage?: false;
+  } & GradientControlPropsDefault &
+    Partial<FilterProps>);
+
 export default function GradientControl({
   colorConfig,
   setColorConfig,
@@ -52,6 +72,7 @@ export default function GradientControl({
   enablePattern = false,
   enableImage = false,
   enableVideo = false,
+  ...rest
 }: GradientControlProps) {
   const [tabSelected, setTabSelected] = useState(colorConfig.type || "solid");
   const [copied, setCopied] = useState(false);
@@ -107,6 +128,7 @@ export default function GradientControl({
   const visibleTabs = tabs.filter((tab) => showTabs.includes(tab.value));
   const hasSingleTab = visibleTabs.length === 1;
 
+
   return (
     <TooltipProvider>
       <Card
@@ -154,10 +176,15 @@ export default function GradientControl({
                 }}
               />
             )}
-            {enableImage && (
+            {enableImage === true && (
               <ImageTab
                 colorConfig={colorConfig}
                 setColorConfig={setColorConfig}
+                intensity={rest?.intensity}
+                onIntensityChange={rest?.onIntensityChange || (() => { })}
+                previewImage={rest?.previewImage || ""}
+                selectedFilter={rest?.selectedFilter || "original"}
+                setSelectedFilter={rest?.setSelectedFilter || (() => { })}
               />
             )}
             {/* {enablePattern && (

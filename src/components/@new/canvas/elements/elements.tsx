@@ -16,6 +16,7 @@ import sampleImage from "@/assets/sample-image.png";
 import { Background } from "@/components/art-background";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShapeElement } from "./shape-elemen";
+import { FilterSelector } from "../../image-selector/filter-selector";
 const BackgroundMenu = () => {
   const filter = useCanvasStore((state) => state.canvasFilter);
   const filterIntensities = useCanvasStore((state) => state.canvasFilterIntensities);
@@ -46,15 +47,13 @@ const BackgroundMenu = () => {
           <TabsTrigger value="filters" className="flex-1">Filters</TabsTrigger>
         </TabsList>
         <TabsContent value="background" >
-          {imageUrl?.type === "image" && <Background className="flex relative h-32 p-1 mb-3   overflow-auto" />}
           <BackgroundController />
         </TabsContent>
         <TabsContent value="filters">
-          <FiltersController
-            filters={filters}
-            activeFilter={activeFilter || "original"}
-            filterIntensities={filterIntensities}
-            onFilterSelect={handleFilterSelect}
+          <FilterSelector
+            value={activeFilter || "original"}
+            onChange={handleFilterSelect}
+            intensity={filterIntensities}
             onIntensityChange={handleIntensityChange}
             previewImage={imageUrl?.type === "image" ? imageUrl.value : sampleImage}
           />
@@ -132,7 +131,7 @@ export const Elements = ({
               style={{
                 width: element.config.size?.width || 120,
                 height: element.config.size?.height || 120,
-                borderRadius: element.config.style.borderRadius
+                borderRadius: element.type === "circle" ? element.config.style.borderRadius : element.config.style.borderRadius
                   ? `${element.config.style.borderRadius}px`
                   : undefined,
                 clipPath: element.config.style.clipPath || undefined,
