@@ -80,6 +80,7 @@ interface CanvasStore {
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
   addElement?: (type: ElementsProps["type"], variant?: TextVariant) => void;
+  duplicateElement?: (element: ElementsProps) => void;
 
   updateElementConfig: (id: string, newConfig: Partial<ElementConfig>) => void;
   removeElement?: (id: string) => void;
@@ -201,6 +202,25 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       elements: {
         ...state.elements,
         [newEl.id]: newEl,
+      },
+    }));
+  },
+
+  duplicateElement: (element) => {
+    const newElement = {
+      ...element, id: Math.random().toString(36).substr(2, 9),
+      config: {
+        ...element.config,
+        position: {
+          x: element.config.position.x + 50,
+          y: element.config.position.y - 50,
+        },
+      },
+    };
+    set((state) => ({
+      elements: {
+        ...state.elements,
+        [newElement.id]: newElement,
       },
     }));
   },

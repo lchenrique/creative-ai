@@ -40,7 +40,7 @@ export const CurveControl = {
                         // TODO: Implement curve conversion
                         // This would need to track which point is selected
                         // and convert it from L to Q or C command
-                        console.log("Toggle curve mode");
+
                     }}
                 >
                     <Bezier className="h-4 w-4" />
@@ -51,7 +51,7 @@ export const CurveControl = {
                     className="h-7 w-7"
                     title="Converter para linha"
                     onClick={() => {
-                        console.log("Toggle line mode");
+
                     }}
                 >
                     <LineSegment className="h-4 w-4" />

@@ -66,7 +66,7 @@ export function useDesignCommands(): UseDesignCommandsResult {
         // 3. Gera comandos com Gemini
         const designService = getDesignCommandService()
         const result: DesignResult = await designService.generateDesign(description)
-        console.log('📋 Comandos:', result.commands)
+
 
         // 4. Executa cada comando
         for (const command of result.commands) {

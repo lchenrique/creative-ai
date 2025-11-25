@@ -41,9 +41,6 @@ interface CanvasContextMenuProps {
 
 export function CanvasContextMenu({ children }: CanvasContextMenuProps) {
   const fabricCanvas = useCreativeStore((state) => state.fabricCanvas);
-  const applyClipPathToObject = useCreativeStore(
-    (state) => state.applyClipPathToObject,
-  );
   const removeClipPath = useCreativeStore((state) => state.removeClipPath);
   const convertToImageFrame = useCreativeStore(
     (state) => state.convertToImageFrame,

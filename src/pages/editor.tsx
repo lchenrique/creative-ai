@@ -1,9 +1,10 @@
 import Canvas from "@/components/@new/canvas";
 
 import { LibrarySidebar } from "@/components/@new/menu/library";
+import { UploadsSidebar } from "@/components/@new/menu/uploads";
 import { MenuItem } from "@/components/@new/menu/menu-item";
 import { PageHeader } from "@/components/layout/page-header";
-import { GeometricShapes01Icon } from "@hugeicons/core-free-icons";
+import { GeometricShapes01Icon, ImageUploadIcon } from "@hugeicons/core-free-icons";
 import { useRef, useState } from "react";
 export type ArtConfig = {
   theme: "modern" | "minimal" | "bold" | "elegant";
@@ -77,7 +78,7 @@ export function EditorPage() {
         // const jsonData = JSON.parse(event.target?.result as string)
         // if (importCanvasJSON) {
         //   importCanvasJSON(jsonData)
-        //   console.log('✅ Design importado com sucesso!')
+        //    
         // }
       } catch (error) { }
     };
@@ -117,10 +118,14 @@ export function EditorPage() {
 
         {/* Preview Area */}
 
-        <div className="h-full bg-sidebar border-x p-2">
+        <div className="h-full flex flex-col gap-2 bg-sidebar border-x p-2">
           <MenuItem
             trigger={GeometricShapes01Icon}
             menuContent={<LibrarySidebar />}
+          />
+          <MenuItem
+            trigger={ImageUploadIcon}
+            menuContent={<UploadsSidebar />}
           />
         </div>
 

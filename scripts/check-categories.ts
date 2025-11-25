@@ -22,8 +22,8 @@ async function checkCategories() {
         .from('cliparts')
         .select('*', { count: 'exact', head: true })
         .eq('category', 'open_stickers')
-    console.log(`   magicons: ${magiconsCount}`)
-    console.log("\n📋 Exemplos de open_stickers:")
+
+
     const { data: openStickers } = await (supabase as any)
         .from('cliparts')
         .select('name, path, category')

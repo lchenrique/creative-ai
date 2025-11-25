@@ -1,19 +1,16 @@
 import bgColorSvg from "@/assets/bg-color.svg";
-import sampleImage from "@/assets/sample-image.png";
 import { ShapeControls } from "@/components/shape-controls";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { filters } from "@/lib/filters";
 import { useCanvasStore, type ElementsProps } from "@/stores/canva-store";
 import { ShapesIcon, TextTIcon } from "@phosphor-icons/react";
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { BackgroundController } from "../../controllers/background-controller";
+import { ImageController } from "../../controllers/image-controller";
 import { TextController } from "../../controllers/text-controller";
-import { FilterSelector } from "../../image-selector/filter-selector";
 import { FloatingMenuItem } from "../../menu/floating-menu/floating-menu-item";
+import { ElementActions } from "./element-actions";
+import { ImageElement } from "./image-element";
 import { ShapeElement } from "./shape-elemen";
 import { TextElement } from "./text-element";
-import { ImageElement } from "./image-element";
-import { ImageController } from "../../controllers/image-controller";
 
 interface ElemetsComponentProps {
   selectedIds?: string[];
@@ -35,7 +32,7 @@ const Element = ({
   onTextChange,
 }: ElementProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  console.log({ element });
+
   if (!element) return null;
 
   if (element.type === "text") {
@@ -65,6 +62,8 @@ export const Elements = ({
   onEditEnd,
 }: ElemetsComponentProps) => {
   const elements = useCanvasStore((state) => state.elements);
+  const duplicateElement = useCanvasStore((state) => state.duplicateElement);
+  const removeElement = useCanvasStore((state) => state.removeElement);
   const updateElementConfig = useCanvasStore(
     (state) => state.updateElementConfig,
   );
@@ -75,6 +74,100 @@ export const Elements = ({
     });
   };
   const ElementsArr = Object.values(elements);
+
+
+  const handleDuplicate = (element: ElementsProps) => {
+    duplicateElement?.(element);
+  }
+
+  const handleDelete = (elementId: string) => {
+    window.dispatchEvent(new CustomEvent("-delete-element", { detail: { elementId } }));
+  }
+
+  const handleRemoveBackground = async (element: ElementsProps) => {
+    if (element.type !== "image") return;
+
+    const imageUrl = element.config.style.backgroundColor?.value;
+    if (!imageUrl || typeof imageUrl !== "string") {
+      console.error("No image URL found");
+      return;
+    }
+
+    try {
+      // Show loading toast
+      const loadingToast = document.createElement("div");
+      loadingToast.id = "bg-removal-toast";
+      loadingToast.className = "fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-lg z-[9999] flex items-center gap-3";
+      loadingToast.innerHTML = `
+        <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent"></div>
+        <div>
+          <div class="font-medium">Removendo fundo...</div>
+          <div class="text-xs opacity-80">Processando no servidor...</div>
+        </div>
+      `;
+      document.body.appendChild(loadingToast);
+
+      console.log("Removing background (backend)...");
+
+      const response = await fetch(`${import.meta.env.VITE_VECTORIZE_API_URL}/remove-background`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageUrl }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to remove background");
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.image) {
+        // Update element with new image (background removed)
+        updateElementConfig?.(element.id, {
+          style: {
+            backgroundColor: { type: "image", value: data.image },
+          },
+        });
+
+        // Remove loading toast
+        loadingToast.remove();
+
+        // Show success toast
+        const successToast = document.createElement("div");
+        successToast.className = "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg z-[9999] flex items-center gap-3";
+        successToast.innerHTML = `
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span>Fundo removido!</span>
+        `;
+        document.body.appendChild(successToast);
+        setTimeout(() => successToast.remove(), 2000);
+
+        console.log("Background removed successfully!");
+      }
+    } catch (error) {
+      // Remove loading toast if exists
+      document.getElementById("bg-removal-toast")?.remove();
+
+      console.error("Error removing background:", error);
+
+      // Show error toast
+      const errorToast = document.createElement("div");
+      errorToast.className = "fixed bottom-4 right-4 bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg z-[9999] flex items-center gap-3";
+      errorToast.innerHTML = `
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span>Erro ao remover fundo</span>
+      `;
+      document.body.appendChild(errorToast);
+      setTimeout(() => errorToast.remove(), 3000);
+    }
+  }
 
   return (
     <>
@@ -92,14 +185,25 @@ export const Elements = ({
                 clipPath: element.config.style.clipPath || undefined,
                 mixBlendMode: element.config.style.mixBlendMode as CSSProperties["mixBlendMode"] || "normal",
                 opacity: element.config.style.opacity,
+                transform: `translate(${element.config.position.x}px, ${element.config.position.y}px)`,
               }}
             >
-              <Element
+              <ElementActions
                 element={element}
-                isEditing={editingTextId === element.id}
-                onEditEnd={(newHeight) => onEditEnd?.(element.id, newHeight)}
-                onTextChange={(text) => handleTextChange(element.id, text)}
-              />
+                onDuplicate={handleDuplicate}
+                onDelete={() => handleDelete(element.id)}
+                onRemoveBackground={handleRemoveBackground}
+              >
+                <div style={{ width: '100%', height: '100%' }}>
+                  <Element
+                    element={element}
+                    isEditing={editingTextId === element.id}
+                    onEditEnd={(newHeight) => onEditEnd?.(element.id, newHeight)}
+                    onTextChange={(text) => handleTextChange(element.id, text)}
+                  />
+                </div>
+              </ElementActions>
+
             </div>
           );
         })}

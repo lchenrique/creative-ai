@@ -106,7 +106,7 @@ export const ImageGallery = () => {
         const blob = await response.blob();
         const contentType = blob.type;
         const blobSize = blob.size;
-        console.log("📏 Blob Size:", blobSize, "bytes");
+
 
         // Se for imagem PNG/JPG, adicionar como imagem normal
         if (

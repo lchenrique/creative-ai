@@ -46,7 +46,7 @@ export const ImageElement = ({ element }: ImageElementProps) => {
 
     const mixBlendMode = element.config.style.mixBlendMode || "normal";
 
-    console.log("MixBlendMode aplicado:", mixBlendMode, "Element ID:", element.id);
+
 
     return (
         <div

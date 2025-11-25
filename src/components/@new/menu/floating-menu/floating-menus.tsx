@@ -62,7 +62,7 @@ export function FloatingMenus() {
       .canvasElements.find((el) => el.id === id);
     return element?.type && element.type !== "text";
   });
-  console.log("hasSelectedShapes", hasSelectedShapes);
+
 
   const handleImportCanvas = () => {
     const input = document.createElement("input");

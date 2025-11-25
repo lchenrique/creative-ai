@@ -132,8 +132,8 @@ async function indexCliparts() {
                 const progress = Math.round((insertedCount / clipartsData.length) * 100)
             }
         }
-        console.log("🎉 Indexação completa!")
-        console.log(`❌ Erros: ${errorCount}`)
+
+
         // 4. Mostrar estatísticas
         // Usar count por categoria para evitar limite de 1000
         const { data: magiconsCount } = await supabase
@@ -145,7 +145,7 @@ async function indexCliparts() {
             .from('cliparts')
             .select('*', { count: 'exact', head: true })
             .eq('category', 'open_stickers')
-        console.log(`   open_stickers: ${openStickersCount || 0}`)
+
 
         // 5. Mostrar exemplo de keywords
         const { data: samples } = await supabase
@@ -155,7 +155,7 @@ async function indexCliparts() {
 
         if (samples) {
             samples.forEach((item: any) => {
-                console.log(`      → ${item.keywords.join(', ')}`)
+            }`)
             })
         }
 

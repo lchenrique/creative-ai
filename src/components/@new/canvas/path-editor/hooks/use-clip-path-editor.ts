@@ -77,7 +77,7 @@ export const useClipPathEditor = ({
     const left = centerX - width / 2;
     const top = centerY - height / 2;
 
-    console.log('📐 Element Rect:', { width, height, rotation, left, top });
+
 
     return {
       left,

@@ -52,7 +52,7 @@ export const Background = ({ className }: ImageCanvasProps) => {
   return (
     <div
       onClick={() => setSelected!(true)}
-      className={cn("absolute  w-full h-full flex items-center justify-center p-8 ", className)}>
+      className={cn("absolute  w-full h-full flex items-center justify-center  ", className)}>
       <div
         className="relative w-full h-full overflow-hidden rounded-2xl shadow-2xl pointer-events-none">
         {canvasBgColor.type === "image" && (

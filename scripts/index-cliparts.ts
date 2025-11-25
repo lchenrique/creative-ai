@@ -91,8 +91,8 @@ async function indexCliparts() {
                 insertedCount += batch.length
             }
         }
-        console.log("🎉 Indexação completa!")
-        console.log(`❌ Erros: ${errorCount}`)
+
+
         // 4. Mostrar estatísticas
         const { data: stats } = await supabase
             .from('cliparts')

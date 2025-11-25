@@ -17,7 +17,7 @@ async function testList() {
         .list('', { limit: 10 })
     if (rootError) {
     } else if (!root || root.length === 0) {
-        console.log("\n💡 Execute: pnpm upload-cliparts")
+
     } else {
         root.forEach(item => {
             const type = item.id ? "📄 Arquivo" : "📁 Pasta"

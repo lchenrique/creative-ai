@@ -34,7 +34,7 @@ export function useTemplateModifier(): UseTemplateModifierResult {
           template,
           description
         )
-        console.log('📸 Keywords para imagens:', result.imageKeywords)
+
 
         // 2. Busca imagens baseadas nas keywords
         const imageService = getImageSearchService()

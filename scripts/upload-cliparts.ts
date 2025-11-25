@@ -91,14 +91,14 @@ async function main() {
 
     // Upload de cada pasta
     for (const folder of folders) {
-        console.log(`   Local: ${folder.path}`)
+
         try {
             await uploadDir(folder.path, folder.name)
         } catch (error) {
         }
     }
-    console.log("🎉 Upload completo!")
-    console.log(`❌ Erros: ${errorCount}`)
+
+
 }
 
 main().catch(console.error)

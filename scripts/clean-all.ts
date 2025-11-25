@@ -52,9 +52,9 @@ async function cleanAll() {
             } else {
             }
         }
-        console.log("✅ Limpeza completa!")
-        console.log("\n📝 Próximos passos:")
-        console.log("   2. Faça upload dos cliparts: pnpm upload-cliparts <caminho>")
+
+
+
     } catch (error) {
         process.exit(1)
     }

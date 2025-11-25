@@ -1,7 +1,7 @@
 import { Background } from "@/components/art-background";
 import { useCanvasStore } from "@/stores/canva-store";
 import { deepFlat } from "@daybrush/utils";
-import { GroupManager } from "@moveable/helper";
+import { GroupManager, TargetList } from "@moveable/helper";
 import * as React from "react";
 import { useCallback } from "react";
 import Moveable, { type MoveableTargetGroupsType } from "react-moveable";
@@ -15,13 +15,11 @@ import { useClipPathEditor } from "./path-editor/hooks/use-clip-path-editor";
 import {
   handleTextResize,
   handleTextResizeStart,
+  isCornerDirection,
 } from "./handlers/text-resize-handler";
 
 export default function Canvas() {
-  const groupManager = React.useMemo<GroupManager>(
-    () => new GroupManager([]),
-    [],
-  );
+  const groupManagerRef = React.useRef<GroupManager>(new GroupManager([]));
   const [targets, setTargets] = React.useState<MoveableTargetGroupsType>([]);
   const moveableRef = React.useRef<Moveable>(null);
   const selectoRef = React.useRef<Selecto>(null);
@@ -35,7 +33,7 @@ export default function Canvas() {
   const setBgSlected = useCanvasStore((state) => state.setBgSlected);
   const selectedIds = useCanvasStore((state) => state.selectedIds);
   const setSelectedIds = useCanvasStore((state) => state.setSelectedIds);
-  console.log("targets", targets);
+
 
   // Text editing mode state
   const [editingTextId, setEditingTextId] = React.useState<string | null>(null);
@@ -76,12 +74,14 @@ export default function Canvas() {
     [removeElement, setSelectedTargets],
   );
 
+  // Memoize element IDs to detect additions/removals without triggering on every property change
+  const elementIds = React.useMemo(() => Object.keys(elements).sort().join(','), [elements]);
+
   React.useEffect(() => {
     // [[0, 1], 2], 3, 4, [5, 6], 7, 8, 9
-    const elements = selectoRef.current!.getSelectableElements();
-
-    groupManager.set([], elements);
-  }, []);
+    const selectableElements = selectoRef.current!.getSelectableElements();
+    groupManagerRef.current = new GroupManager([], selectableElements);
+  }, [elementIds]);
 
   // Keyboard shortcuts (Delete, Escape)
   useCanvasKeyboard({
@@ -101,6 +101,18 @@ export default function Canvas() {
     window.addEventListener("moveable-update-rect", handleMoveableUpdate);
     return () => {
       window.removeEventListener("moveable-update-rect", handleMoveableUpdate);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleDelete = (event: Event) => {
+      const custom = event as CustomEvent<{ elementId: string }>;
+
+      handleDeleteElement(custom.detail.elementId);
+    };
+    window.addEventListener("-delete-element", handleDelete);
+    return () => {
+      window.removeEventListener("-delete-element", handleDelete);
     };
   }, []);
 
@@ -183,17 +195,18 @@ export default function Canvas() {
         return;
       }
 
-      if (!e.moveableTarget) {
+      const target = e.moveableTarget || e.target;
+      if (!target) {
         setSelectedTargets([]);
         return;
       }
       if (e.isDouble) {
-        const targetId = e.moveableTarget.getAttribute("data-element-id");
+        const targetId = target.getAttribute("data-element-id");
 
         // Se já está em modo clippable no mesmo item, adiciona ponto na linha
         if (clippableId === targetId) {
           // Pegar posição do clique relativa ao elemento
-          const rect = e.moveableTarget.getBoundingClientRect();
+          const rect = target.getBoundingClientRect();
           const x = ((e.inputEvent.clientX - rect.left) / rect.width) * 100;
           const y = ((e.inputEvent.clientY - rect.top) / rect.height) * 100;
 
@@ -265,57 +278,47 @@ export default function Canvas() {
             }
 
             // Apply to element
-            e.moveableTarget.style.clipPath = newPolygon;
+            target.style.clipPath = newPolygon;
           }
           return;
         }
 
         // Se clicou duas vezes no item selecionado
         const flatted = deepFlat(targets);
-        const isCurrentlySelected = flatted.some((t) => t === e.moveableTarget);
+        const isCurrentlySelected = flatted.some((t) => t === target);
 
-        if (isCurrentlySelected && flatted.length === 1) {
+        // Allow double-click to activate edit mode even if not currently selected
+        if (flatted.length === 1 || !isCurrentlySelected) {
           // Verificar se é um elemento de texto
           const element = targetId ? elements[targetId] : null;
           if (element?.type === "text") {
             // Ativar modo de edição de texto
-            setEditingTextId(targetId);
+            setTimeout(() => {
+              setEditingTextId(targetId);
+            });
             return;
           }
 
           // Para outros tipos, ativa modo clippable
-          setClippableId(targetId);
+          setTimeout(() => {
+            setClippableId(targetId);
+          });
           return;
         }
 
         // Comportamento padrão para grupos
-        const childs = groupManager.selectSubChilds(targets, e.moveableTarget);
+        const childs = groupManagerRef.current!.selectSubChilds(targets, target);
         setSelectedTargets(childs.targets());
         return;
       }
       if (e.isTrusted) {
-        selectoRef.current!.clickTarget(e.inputEvent, e.moveableTarget);
+        selectoRef.current!.clickTarget(e.inputEvent, target);
       }
     },
-    [groupManager, setSelectedTargets, targets, clippableId],
+    [setSelectedTargets, targets, clippableId],
   );
 
-  const onSelect = useCallback(
-    (e: any) => {
-      const { startAdded, startRemoved, isDragStartEnd } = e;
-      if (isDragStartEnd) {
-        return;
-      }
-      const nextChilds = groupManager.selectSameDepthChilds(
-        e.data.startTargets,
-        startAdded,
-        startRemoved,
-      );
 
-      setSelectedTargets(nextChilds.targets());
-    },
-    [groupManager, setSelectedTargets],
-  );
 
   const onSelectEnd = useCallback(
     (e: any) => {
@@ -324,7 +327,7 @@ export default function Canvas() {
         return;
       }
 
-      const { isDragStartEnd, inputEvent, selected } = e;
+      const { isDragStartEnd, isClick, inputEvent, selected, added, removed } = e;
       const target = inputEvent.target as HTMLElement;
 
       // Verificar se há algum popover aberto (Radix usa portal)
@@ -364,15 +367,65 @@ export default function Canvas() {
           moveable.dragStart(inputEvent);
         });
       }
-      e.currentTarget.setSelectedTargets(selected);
-      setSelectedTargets(selected);
 
-      const newSelectedIds = selected.map((el: any) =>
-        el.getAttribute("data-element-id"),
-      ) as string[];
-      setSelectedIds(newSelectedIds);
+      const groupManager = groupManagerRef.current!;
+      let nextChilds: TargetList;
+
+      // Only use GroupManager for drag selections, not simple clicks
+      if (isDragStartEnd) {
+        if (inputEvent.metaKey || inputEvent.ctrlKey) {
+          nextChilds = groupManager.selectSingleChilds(
+            targets,
+            added,
+            removed,
+          );
+        } else {
+          nextChilds = groupManager.selectCompletedChilds(
+            targets,
+            added,
+            removed,
+            inputEvent.shiftKey,
+          );
+        }
+
+        e.currentTarget.setSelectedTargets(nextChilds.flatten());
+        setSelectedTargets(nextChilds.targets());
+
+        const newSelectedIds = deepFlat(nextChilds.targets()).map((el: any) =>
+          el.getAttribute("data-element-id"),
+        ) as string[];
+        setSelectedIds(newSelectedIds);
+      } else if (!isClick) {
+        // Drag selection (not click, not drag start end)
+        nextChilds = groupManager.selectSameDepthChilds(
+          targets,
+          added,
+          removed,
+        );
+
+        e.currentTarget.setSelectedTargets(nextChilds.flatten());
+        setSelectedTargets(nextChilds.targets());
+
+        const newSelectedIds = deepFlat(nextChilds.targets()).map((el: any) =>
+          el.getAttribute("data-element-id"),
+        ) as string[];
+        setSelectedIds(newSelectedIds);
+      } else {
+        // Simple click - let onClickGroup handle it
+        e.currentTarget.setSelectedTargets(selected);
+        setSelectedTargets(selected);
+
+        const newSelectedIds = selected.map((el: any) =>
+          el.getAttribute("data-element-id"),
+        ) as string[];
+        setSelectedIds(newSelectedIds);
+      }
 
       // Desativar clippable se selecionou outro item
+      const newSelectedIds = deepFlat(targets).map((el: any) =>
+        el.getAttribute("data-element-id"),
+      ) as string[];
+
       if (clippableId && !newSelectedIds.includes(clippableId)) {
         setClippableId(null);
       }
@@ -388,6 +441,7 @@ export default function Canvas() {
       editingTextId,
       setBgSlected,
       setSelectedIds,
+      targets,
     ],
   );
 
@@ -404,10 +458,11 @@ export default function Canvas() {
   // Verificar se o elemento selecionado é circle (para habilitar roundable)
   const isRoundableSelected = React.useMemo(() => {
     if (selectedIds.length !== 1) return false;
-
-    return elements[selectedElement.id]?.type === "circle"
-      || elements[selectedElement.id]?.type === "rectangle"
-      || elements[selectedElement.id]?.type === "image";
+    if (selectedElement) {
+      return elements[selectedElement.id]?.type === "circle"
+        || elements[selectedElement.id]?.type === "rectangle"
+        || elements[selectedElement.id]?.type === "image";
+    }
   }, [selectedIds, elements, selectedElement]);
 
   return (
@@ -442,8 +497,8 @@ export default function Canvas() {
             snapRotationDegrees={Array.from({ length: 72 }, (_, i) => i * 5)}
             onClickGroup={onClickGroup}
             onClick={onClickGroup}
-            verticalGuidelines={[0, 112.5, 225, 337.5, 450]}
-            horizontalGuidelines={[0, 200, 400, 800]}
+            verticalGuidelines={[0, 20, 112.5, 225, 337.5, 430, 450]}
+            horizontalGuidelines={[0, 20, 200, 400, 780, 800]}
             elementGuidelines={elementGuidelines}
             snapDirections={canvasActions.snapDirections}
             elementSnapDirections={canvasActions.elementSnapDirections}
@@ -457,7 +512,7 @@ export default function Canvas() {
               const el = e.target as HTMLElement;
               const elementId = el.getAttribute("data-element-id");
               e.target.style.borderRadius = e.borderRadius;
-              console.log(e.borderRadius, elementId);
+
               if (elementId && updateElementConfig) {
                 updateElementConfig(elementId, {
                   style: {
@@ -476,6 +531,18 @@ export default function Canvas() {
                 }
               }
             }}
+            onDragEnd={(e) => {
+              const elementId = e.target.getAttribute("data-element-id");
+              if (updateElementConfig && elementId) {
+                updateElementConfig(elementId, {
+                  position: {
+                    x: e.lastEvent?.beforeTranslate[0],
+                    y: e.lastEvent?.beforeTranslate[1],
+                  },
+                });
+              }
+            }}
+
             onRenderGroup={canvasActions.onRenderGroup}
             onResizeStart={(e) => {
               handleTextResizeStart(e, elements, setKeepRatioForResize);
@@ -535,6 +602,36 @@ export default function Canvas() {
                 moveableRef.current?.updateRect();
               }
             }}
+            onResizeGroupStart={(e) => {
+              const isCorner = isCornerDirection(e.direction);
+              setKeepRatioForResize(isCorner);
+            }}
+            onResizeGroup={(e) => {
+              e.events.forEach((ev) => {
+                const el = ev.target as HTMLElement;
+                const elementId = el.getAttribute("data-element-id");
+
+                if (updateElementConfig) {
+                  const wasTextHandled = handleTextResize(ev, {
+                    elements,
+                    updateElementConfig,
+                    moveableRef,
+                  });
+
+                  if (!wasTextHandled) {
+                    el.style.width = `${ev.width}px`;
+                    el.style.height = `${ev.height}px`;
+                    el.style.transform = ev.drag.transform;
+
+                    if (elementId) {
+                      updateElementConfig(elementId, {
+                        size: { width: ev.width, height: ev.height },
+                      });
+                    }
+                  }
+                }
+              });
+            }}
             onRotate={canvasActions.onRotate}
             onRotateEnd={(e) => canvasActions.onRotateEnd(e, () => { })}
 
@@ -553,7 +650,6 @@ export default function Canvas() {
             toggleContinueSelect={["shift"]}
             ratio={0}
             onDragStart={onDragStart}
-            onSelect={onSelect}
             onSelectEnd={onSelectEnd}
           ></Selecto>
           <Elements

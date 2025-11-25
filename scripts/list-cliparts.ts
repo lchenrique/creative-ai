@@ -43,7 +43,7 @@ async function listAll(prefix = "", depth = 0): Promise<string[]> {
 
 async function main() {
     const allFiles = await listAll()
-    console.log(`📊 Total de arquivos: ${allFiles.length}`)
+
     // Agrupar por categoria
     const categories: Record<string, number> = {}
     allFiles.forEach((file) => {
@@ -59,7 +59,7 @@ async function main() {
     if (allFiles.length > 0) {
         allFiles.slice(0, 5).forEach((file) => {
             const { data } = supabase.storage.from(bucketName).getPublicUrl(file)
-            console.log(`   → ${data.publicUrl}\n`)
+
         })
     }
 }

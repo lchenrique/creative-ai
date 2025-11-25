@@ -779,7 +779,7 @@ export const useCreativeStore = create<CreativeStore>((set, get) => ({
 
         artworkId = data.id;
         set({ currentArtworkId: artworkId });
-        console.log("✅ Artwork criado:", artworkId);
+
       }
 
       set({ isSaving: false, lastSavedAt: new Date().toISOString() });

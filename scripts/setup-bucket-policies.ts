@@ -27,14 +27,14 @@ async function setupBucketPolicies() {
     try {
         // Nota: A API do Supabase Storage ainda não tem endpoint direto para policies via SDK
         // Você precisa configurar isso manualmente no painel do Supabase
-        console.log("   https://supabase.com/dashboard/project/sceqhfcyjtjfawexnbvd/storage/policies\n")
-        console.log("   Nome: Public read access for cliparts")
-        console.log("   Policy definition: true")
-        console.log("📝 OU execute este SQL no SQL Editor do Supabase:\n")
+
+
+
+
         console.log(`CREATE POLICY "Public read access for cliparts"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'cliparts');`)
-        console.log("   (não recomendado para produção, mas funciona para desenvolvimento)")
+        ")
 
     } catch (error) {
     }

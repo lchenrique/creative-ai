@@ -18,8 +18,8 @@ export const ShapeElement = ({ element }: ShapeProps) => {
             element.config.size.height,
         )
         : undefined;
-    console.log("filter", filter);
-    console.log("intensity", element.config.filterIntensities);
+
+
 
     const getFilterStyle = () => {
         if (filter === "original") return {};
@@ -55,8 +55,6 @@ export const ShapeElement = ({ element }: ShapeProps) => {
                 style={{
                     width: element.config.size.width,
                     height: element.config.size.height,
-                    left: element.config.position.x,
-                    top: element.config.position.y,
                     background: cssBackground,
                     borderRadius: element.config.style.borderRadius,
                     clipPath: element.config.style.clipPath,

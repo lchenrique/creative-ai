@@ -50,7 +50,7 @@ async function uploadFolder(localPath: string, remotePath: string = BUCKET_PREFI
 }
 
 async function main() {
-    console.log(`📁 Pasta local: ${LOCAL_FOLDER}\n`)
+
 
     if (!fs.existsSync(LOCAL_FOLDER)) {
         console.error("\n💡 Como usar:")
@@ -61,7 +61,7 @@ async function main() {
 
     try {
         await uploadFolder(LOCAL_FOLDER)
-        console.log("\n🔍 Próximo passo: execute 'pnpm index-cliparts-v2' para indexar no banco")
+
     } catch (error) {
         process.exit(1)
     }
